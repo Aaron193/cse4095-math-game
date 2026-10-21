@@ -1,9 +1,11 @@
+import type { ReviewHistory } from '../services/reviewService'
 import { createContext, useContext } from 'react'
 import type { StoredData } from '../services/storageService'
 import type { AppSettings } from '../types/settings'
 import type { PracticeSessionState } from '../types/session'
 
 export interface AppDataContextValue {
+  getReviewHistory: () => ReviewHistory
   data: StoredData
   warning: string | null
   resetKey: number

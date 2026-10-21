@@ -16,7 +16,7 @@ export default function SessionSummaryPage() {
   const { setConfiguration } = usePracticeConfiguration()
   const navigate = useNavigate()
   const heading = useRef<HTMLHeadingElement>(null)
-  const [showReviewMessage, setShowReviewMessage] = useState(false)
+  const [reviewMessage, setReviewMessage] = useState('')
   useEffect(() => {
     heading.current?.focus({ preventScroll: true })
   }, [state?.session.id, state?.isActive])
@@ -28,11 +28,15 @@ export default function SessionSummaryPage() {
       operations: [...state.session.operations],
       difficulty: state.session.difficulty,
       sessionLength: state.session.sessionLength,
+      ...(state.session.mode ? { mode: state.session.mode } : {}),
     }
     if (startSession(configuration)) {
       setConfiguration(configuration)
       navigate('/practice/session')
-    }
+    } else
+      setReviewMessage(
+        'All selected mistakes are mastered. Choose regular practice or other active patterns in Practice Setup.',
+      )
   }
 
   return (
@@ -47,6 +51,15 @@ export default function SessionSummaryPage() {
       {completed ? (
         <>
           <p>Nice work making time to practice! Here’s how you did.</p>
+          {state.session.mode === 'mistake-review' && (
+            <p>Mistake-review session</p>
+          )}
+          {state.session.completionReason === 'mastered' && (
+            <p>
+              You mastered every selected pattern! This review finished early.
+              Great practice!
+            </p>
+          )}
           <SessionProgress session={state.session} />
           <dl className="summary-highlights">
             <div>
@@ -90,7 +103,7 @@ export default function SessionSummaryPage() {
             <button
               className="button button-tertiary"
               type="button"
-              onClick={() => setShowReviewMessage(true)}
+              onClick={() => navigate('/practice/setup?mode=mistake-review')}
             >
               Practice Mistakes
             </button>
@@ -104,11 +117,7 @@ export default function SessionSummaryPage() {
               Return Home
             </Link>
           </div>
-          <p role="status">
-            {showReviewMessage
-              ? 'Mistake-review practice is coming soon. You can keep practicing with Practice Again!'
-              : ''}
-          </p>
+          <p role="status">{reviewMessage}</p>
         </>
       ) : (
         <>

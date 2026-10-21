@@ -4,7 +4,7 @@ A university software development project for children ages 7–12 to practice a
 
 ## Current status
 
-Phases 1–11 are complete: shared navigation, configurable practice, validated multiple-choice questions, interactive cards, fixed/continuous sessions, summaries, persistent history, statistics, and application settings. Results are self-reported. Browser localStorage preserves attempts, session metadata, statistics, and preferences. Mistake tracking/review begins in Phase 12 and is not implemented. Sound and step-by-step explanations are visibly unavailable; card animations work and can be disabled.
+Phases 1–15 are complete: shared navigation, configurable practice, validated multiple-choice questions, interactive cards, fixed/continuous sessions, summaries, persistent history, statistics, and application settings. Results are self-reported. Browser localStorage preserves attempts, session metadata, mistake patterns, statistics, and preferences. Mistake tracking, related-question review, mastery, and mistake statistics are implemented. Phase 16 has not begun. Sound and step-by-step explanations are visibly unavailable; card animations work and can be disabled.
 
 ## Technology
 
@@ -195,15 +195,15 @@ Chrome completed a real five-question session with three right and two wrong sel
 
 Fixed sessions automatically navigate to `/practice/summary` after their final answer; continuous sessions navigate there after confirming **End Session**. The session page redirects inactive sessions with React Router `Navigate` using replacement navigation. Completion detection, stopping generation, timestamps, and duplicate guards continue to use the existing Phase 7 service. Navigating to the summary only reads the retained Context state and never generates a question or restarts a session.
 
-`SessionSummaryPage` reuses `SessionProgress` for attempted/correct/incorrect totals and finished fixed progress. It shows the selected operations and difficulty, accuracy, and completed mistake-review count. The count is derived from attempt sources and remains zero for all currently available regular practice. Mistake-review generation remains deferred; aggregate statistics are now implemented in Phase 10.
+`SessionSummaryPage` reuses `SessionProgress` for attempted/correct/incorrect totals and finished fixed progress. It shows the selected operations and difficulty, accuracy, and completed mistake-review count. The count is derived from attempt sources and remains zero for all currently available regular practice. Regular questions have source `regular`; review questions now carry source `mistake-review` and a parent pattern ID. Both feed the same totals.
 
 `sessionAccuracy` calculates `correct / attempted × 100`, rounded to one decimal place when needed. Zero attempts returns 0%, avoiding division by zero. Invalid numeric totals are rejected by the calculation helper. Results reflect self-reported correctness, consistent with the session/card behavior.
 
 ### Summary actions
 
 - **Practice Again** explicitly creates a new session using a copy of the completed configuration, resets attempts/totals/index, generates a new question with a fresh ID, and opens the session route. The old attempt list and scores are not reused. Random arithmetic facts may naturally recur; session state and question objects are newly generated.
-- **Practice Mistakes** displays an accessible coming-soon message and leaves the summary unchanged. No review mode is implemented yet.
-- **Change Settings** returns to practice setup to change operations, difficulty, and length. It does not implement the separate application Settings page.
+- **Practice Mistakes** opens `/practice/setup?mode=mistake-review`, selecting review mode and a difficulty with active patterns when possible. With no active mistakes, setup explains this and offers regular practice.
+- **Change Settings** returns to practice setup to change the session choices; application preferences have their own Settings page.
 - **View Statistics** opens the statistics page backed by persisted attempts.
 - **Return Home** navigates home while retaining the current completed session in memory.
 
@@ -218,7 +218,7 @@ Chrome completed a five-question session and confirmed 5 attempted / 3 correct /
 To verify manually:
 
 1. Run `npm run dev` and start a five-question session. Mark three answers right and two wrong. Confirm automatic navigation to **Session Summary** with totals **5 / 3 / 2**, **60% accuracy**, your operations/difficulty, and **0** mistake-review questions.
-2. Check **Practice Mistakes** shows its message. Try **View Statistics**, **Change Settings**, and **Return Home**; use browser Back to confirm the finished results remain available.
+2. Check **Practice Mistakes** opens review setup. Try **View Statistics**, **Change Settings**, and **Return Home**; use browser Back to confirm the finished results remain available.
 3. Select **Practice Again**. Confirm the same operations/difficulty/length, zero totals, Question 1, and a card with no selected answer. Complete it normally to produce another summary.
 4. Start continuous practice and end immediately: summary totals and accuracy should all be zero. Repeat with one right and one wrong result: expect 2 attempted and 50% accuracy. Canceling the end confirmation should keep practicing.
 5. Refresh the summary: its results should remain. In a browser with no saved completed session, check the helpful missing-session message and setup/home links.
@@ -230,8 +230,8 @@ To verify manually:
 
 ### Storage and retention
 
-- The single `mathPractice.data` JSON key atomically stores schema version 1, settings, session metadata, attempts, and derived statistics. This follows the specification's versioning requirement while avoiding partial writes across its suggested separate keys.
-- Missing-version/version-0 snapshots have an explicit migration entry point. Unknown versions remain untouched and show a warning rather than being overwritten by this version of the app.
+- The single `mathPractice.data` JSON key atomically stores schema version 2, settings, session metadata, attempts, derived mistake patterns, and statistics. This follows the specification's versioning requirement while avoiding partial writes across its suggested separate keys.
+- Missing-version/version-0/version-1 snapshots migrate to version 2, backfilling mistake patterns from existing history. The migrated snapshot is written on the next explicit save. Unknown versions remain untouched and show a warning rather than being overwritten by this version of the app.
 - Invalid JSON falls back to fresh data. Invalid sections/rows are repaired or discarded independently; valid attempts are retained. Loaded attempts reuse arithmetic/difficulty validation, validate selected answers, IDs, dates, and self-reports, and are deduplicated.
 - The newest 500 session metadata records are retained; the statistics page displays the newest 20. All attempts remain available for lifetime totals, including attempts whose older session metadata has been pruned. No attempt history is silently discarded to make space.
 - Missing/unavailable storage and quota/write failures do not crash practice. New results remain in React state with a friendly warning that unsaved changes may be lost. Successful later writes retry the current snapshot.
@@ -240,13 +240,13 @@ To verify manually:
 
 ### Statistics and resets
 
-The Statistics page shows overall, operation, and difficulty totals/accuracy, plus dated recent sessions with their configuration and performance. Zero attempts yields 0%, using the same one-decimal accuracy helper as summaries. Unfinished sessions are labeled. Empty states guide new users to setup. No mistake statistics or tracking have been introduced.
+The Statistics page shows overall, operation, and difficulty totals/accuracy, plus dated recent sessions with their configuration and performance. Zero attempts yields 0%, using the same one-decimal accuracy helper as summaries. Unfinished sessions are labeled. Empty states guide new users to setup. The mistake-review section now also shows active/mastered patterns, review counts, frequent missed operations/facts, and filterable pattern details.
 
-**Reset Statistics** requires a native browser confirmation and clears sessions, attempts, derived totals, and the current in-memory session. Saved settings remain. **Clear All Application Data** requires a stronger confirmation, clears all `mathPractice.*` keys (including future/legacy mistake data), restores defaults, and returns home. Neither action deletes unrelated localStorage keys. If browser permissions prevent deletion, a visible warning explains the failure.
+**Reset Statistics** requires a native browser confirmation and clears sessions, attempts, derived mistake patterns/mastery, totals, and the current in-memory session. Saved settings remain. **Clear All Application Data** requires a stronger confirmation, clears all `mathPractice.*` keys (including future/legacy mistake data), restores defaults, and returns home. Neither action deletes unrelated localStorage keys. If browser permissions prevent deletion, a visible warning explains the failure.
 
 ### Settings
 
-Save Settings persists animation and default operations/difficulty/length. At least one default operation is required. Defaults start with Addition, Beginner, 10 questions, and animations enabled. Existing setup selectors are reused; session overrides never overwrite saved defaults. Changing defaults invalidates remembered setup choices without resetting an active session. The session's animation checkbox updates this same preference immediately, preserving the current card and reduced-motion behavior. Sound/explanation controls are disabled with descriptions explaining their unavailability. Mastery configuration remains deferred.
+Save Settings persists animation and default operations/difficulty/length. At least one default operation is required. Defaults start with Addition, Beginner, 10 questions, and animations enabled. Existing setup selectors are reused; session overrides never overwrite saved defaults. Changing defaults invalidates remembered setup choices without resetting an active session. The session's animation checkbox updates this same preference immediately, preserving the current card and reduced-motion behavior. Sound/explanation controls are disabled with descriptions explaining their unavailability. Mastery uses the validated `settings.masteryThreshold` field; its default is a code constant, and no new settings control is added in this cycle.
 
 ### Verification and manual review
 
@@ -262,6 +262,57 @@ To verify manually:
 4. Cancel Reset Statistics and check nothing changed. Confirm it and check attempts, sessions, and totals are cleared while preferences remain, including after refresh.
 5. Cancel Clear All Application Data and check nothing changed. Confirm it and check navigation home, empty statistics, default preferences, and no completed summary after refresh.
 6. Test keyboard controls, native dialogs, reduced motion, and mobile widths. Sound and explanations should clearly say they are unavailable.
+
+## Mistake practice (Phases 12–15)
+
+### History, pattern identity, and mastery
+
+`mistakeService.ts` derives patterns by replaying deduplicated attempts in chronological order (with insertion order breaking timestamp ties). The identity is operation + difficulty + ordered operands; reversed addition/multiplication facts remain related but distinct records. IDs are deterministic, so replaying history, retrying a save, or reloading cannot create duplicate patterns. A regular self-reported miss creates or updates its pattern, increments the incorrect count, saves the latest miss date, and resets review progress.
+
+Review attempts persist `mistakePatternId`. A linked review answer updates its original pattern rather than creating another pattern for every nearby expression. A review miss increments the parent's miss count, updates its date, and resets progress. The actual question and operation remain in the attempt, so operation statistics still reflect what the child answered. A correct ordinary answer does not increase review mastery. Historical review records without a parent link still count in overall/review statistics; they cannot grant mastery to an unidentified parent.
+
+Three distinct correct related reviews since the last miss mark a pattern mastered. A later regular miss on that original fact, or a linked review miss, reactivates it. `DEFAULT_MASTERY_THRESHOLD` in `mistakeService.ts` configures the default for new settings. Services also accept a threshold explicitly, and the app uses the validated per-profile `settings.masteryThreshold`; changing the default constant does not overwrite existing saved preferences. Counters and cached patterns are rebuilt from canonical history, so corrupted pattern caches cannot invent or erase practice results.
+
+### Related questions
+
+`similarQuestionGenerator.ts` builds a finite candidate set using:
+
+- nearby operands (division adjusts quotient/divisor and reconstructs a divisible dividend);
+- reversed addition/multiplication operands;
+- addition/subtraction and multiplication/division inverse fact families.
+
+Every candidate must pass the existing arithmetic/difficulty validator. Inverse or reversed forms outside that difficulty are discarded, including zero divisors and fractional/negative answers. The original expression is excluded. The generator chooses among available strategies, prefers expressions outside the most recent six attempts, and uses a bounded fallback that avoids the immediate previous expression when alternatives exist. It then calls the existing distractor/shuffle service, assigns a fresh UUID, and returns a validated complete `Question` with its source and parent ID. Session generation also rejects IDs already used in that session.
+
+### Review sessions
+
+Setup offers Regular practice and Mistake review. With no active patterns, review is disabled with an explanation; direct review links also remain safe. Entering review selects all operations and an available difficulty to avoid an empty initial filter. Students can change these choices. Only active parent patterns matching the selected operations/difficulty are eligible; inverse review questions must also use a selected operation and the same difficulty.
+
+`reviewService.ts` prioritizes frequent misses, recent misses, and low successful-review progress, randomizing patterns within two priority points of the best score. When multiple parents remain, it avoids selecting the previous parent consecutively. The existing session hook obtains fresh canonical history through the saved-data provider; it includes the just-completed attempt before choosing the next question. No separate review session engine or card system is introduced.
+
+All existing lengths, progress, ending confirmation, duplicate guards, summary counts, retries, and persistence apply to review. A fixed session ends at its selected length; any review session ends earlier if every selected pattern is mastered. The summary explicitly explains early completion. **Practice Again** preserves review mode when eligible patterns remain; otherwise it shows a helpful message instead of starting an empty session. **Practice Mistakes** on summaries/statistics opens review setup.
+
+### Mistake statistics
+
+`mistakeStatistics.ts` calculates active/mastered totals, similar questions attempted/correct, most-missed operations (from actual attempt operations), and frequent facts (including related review misses). Tied operations/facts are retained, with facts sorted by miss count, latest date, then ID. The overview shows up to five top tied facts and explains when more are available in details. Active, Mastered, and All filters show original expressions, difficulty, miss counts, successful-review streaks, progress bars, and last-miss dates. Zero-history and fully-mastered states use encouraging messages. Both history reset and Clear All remove derived mistake progress with its source records.
+
+### Verification and manual review
+
+Each phase was verified before proceeding: Phase 12 passed 381 tests, Phase 13 passed 405, and Phase 14 passed 424, together with TypeScript, ESLint, formatting, and production builds. Final verification passed 434 tests in 28 files and those same checks. Generation tests include 1,600 seeded similar questions across all operation/difficulty combinations, explicit inverse/reversal cases, zero/maximum boundaries, and repeat/failure behavior. Further tests cover migrations, damaged caches, duplicate saves, mastery/reset/reactivation, priority, all fixed lengths, continuous practice, real-card review flows, summary counts, reloads, ranking ties, filtering, and reset consistency.
+
+An older statistics test counted every `time` element on the page; mistake dates correctly increased that count. Its assertion now targets only Recent sessions. A reused-review-ID regression test also verifies that a generation error preserves the accepted attempt for retry rather than displaying an unanswerable duplicate card.
+
+Chrome completed regular practice with a missed question, followed the summary action into review, mastered the pattern after three linked answers, and verified matching summary/statistics (4 attempted, 3 correct, 1 incorrect, 75%). Refresh and a full Chrome close/reopen preserved mastery and disabled the empty queue. A controlled random stream generated the original fact again through the regular generator; missing it reactivated the same pattern with no duplicate. A continuous review miss updated the parent once, cancel/confirm ending preserved exact counts, and history reset erased mistake progress too. Desktop/mobile screenshots were inspected; layouts fit 1280, 768, 375, and 320 pixels with no horizontal overflow or runtime/console errors. Other browsers and actual screen-reader checks remain outside this cycle.
+
+To verify manually:
+
+1. Run `npm run dev`. Start continuous regular practice, complete one question with **I Got It Wrong**, and confirm **End Session**.
+2. Select **Practice Mistakes** on the summary. Check review mode and matching patterns, choose 5 questions, and start.
+3. Mark three related questions right. With one active pattern, review should finish early and explain mastery. Check the summary shows 3 completed review questions.
+4. Open Statistics. Compare overall totals with regular + review attempts. Toggle Active/Mastered/All and inspect the original fact, streak, count, and date. Refresh or reopen the browser to confirm persistence.
+5. Try a missed review: it should update the same original pattern, reset its streak, and count once in overall/review totals. A later regular miss on the original expression should reactivate a mastered pattern.
+6. Test a different difficulty/operation filter with no matches, empty review after resetting history, fixed lengths, and continuous ending confirmation. No empty session should start. Reset Statistics should clear mistake progress while keeping preferences; Clear All should restore defaults too.
+
+Files introduced: `mistakeService.ts`, `similarQuestionGenerator.ts`, `reviewService.ts`, and `mistakeStatistics.ts` with unit tests; `MistakeStatistics.tsx`; `MistakeReview.test.tsx`, `MistakeStatistics.test.tsx`, and the shared `mistakeData.ts` fixture. Existing session types/engine/hook/providers, storage/schema tests, setup, session content, summary/actions, statistics, responsive styles, README, and TODO were extended. No dependencies, specification changes, commits, pushes, or Phase 16 work were introduced.
 
 ## Structure
 

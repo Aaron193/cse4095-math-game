@@ -92,7 +92,7 @@ describe('versioned local storage', () => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...data, version }))
       expect(readStorage().data).toEqual(data)
       writeStorage(readStorage().data)
-      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).version).toBe(1)
+      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).version).toBe(2)
     },
   )
   it('preserves unsupported schema data until an explicit clear', () => {
@@ -214,4 +214,26 @@ describe('versioned local storage', () => {
       'could not be completely erased',
     )
   })
+})
+
+it('validates optional review links and mastery completion metadata without discarding other valid records', () => {
+  const data = savedFixture()
+  for (const patch of [
+    { mistakePatternId: '' },
+    { mistakePatternId: 3 },
+    { source: 'regular', mistakePatternId: 'parent' },
+  ]) {
+    const repaired = normalizeData({
+      ...data,
+      attempts: [{ ...data.attempts[0], ...patch }],
+    })
+    expect(repaired.attempts).toHaveLength(0)
+    expect(repaired.mistakePatterns).toHaveLength(0)
+  }
+  const repaired = normalizeData({
+    ...data,
+    sessions: [{ ...data.sessions[0], completionReason: 'unknown' }],
+  })
+  expect(repaired.sessions).toHaveLength(0)
+  expect(repaired.attempts).toHaveLength(1)
 })

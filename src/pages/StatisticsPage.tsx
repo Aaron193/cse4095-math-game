@@ -1,5 +1,6 @@
 import { Link } from 'react-router'
 import { useAppData } from '../app/appDataContext'
+import MistakeStatistics from '../components/statistics/MistakeStatistics'
 import StatisticsTotals from '../components/statistics/StatisticsTotals'
 import {
   difficultyOptions,
@@ -36,6 +37,11 @@ export default function StatisticsPage() {
           </p>
         )}
       </section>
+      <MistakeStatistics
+        patterns={data.mistakePatterns}
+        attempts={data.attempts}
+        threshold={data.settings.masteryThreshold}
+      />
       <h2>By operation</h2>
       <div className="statistics-grid">
         {operationOptions.map((operation) => (
@@ -116,8 +122,8 @@ export default function StatisticsPage() {
       <section className="data-reset" aria-labelledby="reset-heading">
         <h2 id="reset-heading">Reset your progress</h2>
         <p>
-          This erases practice history and statistics. Your saved settings stay
-          the same.
+          This erases practice history, mistake progress, and statistics. Your
+          saved settings stay the same.
         </p>
         <button
           type="button"

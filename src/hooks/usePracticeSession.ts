@@ -1,3 +1,5 @@
+import type { ReviewHistory } from '../services/reviewService'
+import { eligibleReviewPatterns } from '../services/reviewService'
 import { useRef, useState } from 'react'
 import type {
   PracticeConfiguration,
@@ -15,6 +17,7 @@ import {
 export default function usePracticeSession(
   initialState: PracticeSessionState | null = null,
   onChange?: (state: PracticeSessionState) => void,
+  getHistory?: () => ReviewHistory,
 ) {
   const [state, setState] = useState<PracticeSessionState | null>(initialState)
   const current = useRef<PracticeSessionState | null>(initialState)
@@ -25,7 +28,13 @@ export default function usePracticeSession(
   }
   function startSession(configuration: PracticeConfiguration) {
     if (!isPracticeConfiguration(configuration)) return false
-    commit(createPracticeSession(configuration))
+    const history = getHistory?.()
+    if (
+      configuration.mode === 'mistake-review' &&
+      (!history || eligibleReviewPatterns(configuration, history).length === 0)
+    )
+      return false
+    commit(createPracticeSession(configuration, history))
     return true
   }
   function recordResult(
@@ -39,6 +48,7 @@ export default function usePracticeSession(
       questionId,
       correct,
       selectedAnswer,
+      getHistory?.(),
     )
     if (next !== current.current) commit(next)
   }
@@ -46,7 +56,8 @@ export default function usePracticeSession(
     if (current.current?.isActive) commit(endPracticeSession(current.current))
   }
   function retryQuestion() {
-    if (current.current?.error) commit(retrySessionQuestion(current.current))
+    if (current.current?.error)
+      commit(retrySessionQuestion(current.current, getHistory?.()))
   }
   return { state, startSession, recordResult, endSession, retryQuestion }
 }

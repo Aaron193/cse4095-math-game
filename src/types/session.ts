@@ -5,6 +5,8 @@ import type {
   QuestionSource,
 } from './question'
 
+export type PracticeMode = 'regular' | 'mistake-review'
+
 export type SessionLength = number | 'continuous'
 
 export interface PracticeAttempt {
@@ -18,6 +20,7 @@ export interface PracticeAttempt {
   selfReportedCorrect: boolean
   difficulty: DifficultyLevel
   source: QuestionSource
+  mistakePatternId?: string
   /** ISO 8601 timestamp. */
   attemptedAt: string
   sessionId: string
@@ -31,6 +34,8 @@ export interface PracticeSession {
   operations: MathOperation[]
   difficulty: DifficultyLevel
   sessionLength: SessionLength
+  mode?: PracticeMode
+  completionReason?: 'mastered'
   attempted: number
   correct: number
   incorrect: number
@@ -39,7 +44,7 @@ export interface PracticeSession {
 /** Setup choices only; no session progress or generated questions. */
 export type PracticeConfiguration = Pick<
   PracticeSession,
-  'operations' | 'difficulty' | 'sessionLength'
+  'operations' | 'difficulty' | 'sessionLength' | 'mode'
 >
 
 /** The active card stays in React state; attempts and session metadata are persisted. */

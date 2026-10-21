@@ -57,6 +57,10 @@ export default function AppDataProvider({ children }: { children: ReactNode }) {
   return (
     <AppDataContext.Provider
       value={{
+        getReviewHistory: () => ({
+          attempts: current.current.attempts,
+          masteryThreshold: current.current.settings.masteryThreshold,
+        }),
         data,
         warning,
         resetKey,

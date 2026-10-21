@@ -82,7 +82,11 @@ describe('statistics page', () => {
     )
     expect(recent.getAllByRole('listitem')).toHaveLength(2)
     expect(recent.getByText('Division · Advanced')).toBeInTheDocument()
-    expect(document.querySelectorAll('time[datetime]')).toHaveLength(2)
+    expect(
+      screen
+        .getByRole('region', { name: 'Recent sessions' })
+        .querySelectorAll('time[datetime]'),
+    ).toHaveLength(2)
     first.unmount()
     open()
     expectTotals(

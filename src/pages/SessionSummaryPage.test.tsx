@@ -207,13 +207,13 @@ describe('summary details and actions', () => {
     await user.click(screen.getByRole('link', { name: label }))
     expect(screen.getByLabelText('Current route').textContent).toBe(path)
   })
-  it('Practice Mistakes announces coming soon and leaves results unchanged', async () => {
+  it('Practice Mistakes opens review setup and leaves results unchanged', async () => {
     const user = userEvent.setup()
     const { startSession } = renderSummary()
     await user.click(screen.getByRole('button', { name: 'Practice Mistakes' }))
-    expect(
-      screen.getByText(/Mistake-review practice is coming soon/),
-    ).toBeInTheDocument()
+    expect(screen.getByLabelText('Current route')).toHaveTextContent(
+      '/practice/setup',
+    )
     expect(metric('Accuracy')).toHaveTextContent('60%')
     expect(startSession).not.toHaveBeenCalled()
   })

@@ -65,6 +65,9 @@ export default function PracticeSessionContent({
           }
         </dd>
       </dl>
+      {session.mode === 'mistake-review' && (
+        <p>Let’s grow your skills with mistake review!</p>
+      )}
       <SessionProgress session={session} />
       <h2 ref={heading} tabIndex={-1} className="session-stage-heading">
         {isActive

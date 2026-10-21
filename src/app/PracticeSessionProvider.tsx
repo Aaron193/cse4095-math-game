@@ -10,9 +10,9 @@ export default function PracticeSessionProvider({
 }: {
   children: ReactNode
 }) {
-  const { data, saveSession } = useAppData()
+  const { data, saveSession, getReviewHistory } = useAppData()
   const [initial] = useState(() => restoreCompletedSession(data))
-  const session = usePracticeSession(initial, saveSession)
+  const session = usePracticeSession(initial, saveSession, getReviewHistory)
   return (
     <PracticeSessionContext.Provider value={session}>
       {children}

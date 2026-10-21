@@ -1,3 +1,8 @@
+import type { MistakePattern } from '../types/mistake'
+import {
+  DEFAULT_MASTERY_THRESHOLD,
+  deriveMistakePatterns,
+} from './mistakeService'
 import type { AppSettings } from '../types/settings'
 import type {
   PracticeAttempt,
@@ -19,7 +24,7 @@ import {
 } from './statisticsService'
 
 export const STORAGE_KEY = 'mathPractice.data'
-export const SCHEMA_VERSION = 1
+export const SCHEMA_VERSION = 2
 // Retain all attempts for lifetime totals; bound only older session metadata.
 export const MAX_SESSION_RECORDS = 500
 export interface StoredData {
@@ -28,6 +33,7 @@ export interface StoredData {
   sessions: PracticeSession[]
   attempts: PracticeAttempt[]
   statistics: AppStatistics
+  mistakePatterns: MistakePattern[]
 }
 export interface StorageResult {
   data: StoredData
@@ -42,7 +48,7 @@ export function defaultSettings(): AppSettings {
     defaultSessionLength: 10,
     defaultDifficulty: 1,
     defaultOperations: ['addition'],
-    masteryThreshold: 3,
+    masteryThreshold: DEFAULT_MASTERY_THRESHOLD,
   }
 }
 export function emptyData(): StoredData {
@@ -52,6 +58,7 @@ export function emptyData(): StoredData {
     sessions: [],
     attempts: [],
     statistics: calculateStatistics([]),
+    mistakePatterns: [],
   }
 }
 const object = (value: unknown): value is Record<string, unknown> =>
@@ -88,6 +95,9 @@ function isAttempt(value: unknown): value is PracticeAttempt {
     !identifier(value.sessionId) ||
     !timestamp(value.attemptedAt) ||
     typeof value.selfReportedCorrect !== 'boolean' ||
+    (value.mistakePatternId !== undefined &&
+      (!identifier(value.mistakePatternId) ||
+        value.source !== 'mistake-review')) ||
     !isMathOperation(value.operation)
   )
     return false
@@ -116,6 +126,10 @@ function isSession(value: unknown): value is PracticeSession {
     (value.completedAt === undefined ||
       (timestamp(value.completedAt) &&
         Date.parse(value.completedAt) >= Date.parse(value.startedAt))) &&
+    (value.completionReason === undefined ||
+      (value.completionReason === 'mastered' &&
+        value.mode === 'mistake-review' &&
+        timestamp(value.completedAt))) &&
     isPracticeConfiguration(value)
   )
 }
@@ -155,6 +169,7 @@ export function normalizeData(value: unknown): StoredData {
     attempts,
     sessions: recentSessions([...sessions.values()], MAX_SESSION_RECORDS),
     statistics: calculateStatistics(attempts),
+    mistakePatterns: deriveMistakePatterns(attempts, settings.masteryThreshold),
   }
 }
 function browserStorage(): Storage {
@@ -162,10 +177,10 @@ function browserStorage(): Storage {
 }
 const unavailable =
   'Your progress could not be saved. You can keep practicing, but new progress may be lost when you close or refresh this page.'
-/** Missing-version/version-0 snapshots share today's fields; add future migrations here. */
+/** Missing-version/version-0/version-1 snapshots share today's fields; add future migrations here. */
 function migrate(value: unknown): unknown {
   if (!object(value)) throw new Error('Invalid storage document')
-  if (value.version === undefined || value.version === 0)
+  if (value.version === undefined || value.version === 0 || value.version === 1)
     return { ...value, version: SCHEMA_VERSION }
   return value
 }
@@ -186,6 +201,7 @@ export function readStorage(
       object(parsed) &&
       parsed.version !== undefined &&
       parsed.version !== 0 &&
+      parsed.version !== 1 &&
       parsed.version !== SCHEMA_VERSION
     ) {
       return {
