@@ -4,7 +4,7 @@ A university software development project for children ages 7–12 to practice a
 
 ## Current status
 
-Phases 1–5 are complete: shared layout/navigation, a home page, practice configuration, six routes, shared types, and development tooling. Practice Setup provides operation, difficulty, and length selectors with accessible validation. Start Session opens a placeholder displaying the selected choices. Session Summary, Statistics, and Settings remain placeholders. Background arithmetic and multiple-choice generation are implemented and tested. Flashcards, session progress, persistence, statistics calculations, and settings behavior are not implemented. The Practice Session page still displays only the selected configuration.
+Phases 1–6 are complete: shared layout/navigation, a home page, practice configuration, six routes, shared types, and development tooling. Practice Setup provides operation, difficulty, and length selectors with accessible validation. Start Session opens the selected configuration and a single interactive question-card preview. Session Summary, Statistics, and Settings remain placeholders. Background arithmetic and multiple-choice generation are implemented and tested. Question cards support answer selection, flipping, and one self-report callback per question. Session progression, scoring, persistence, statistics calculations, and the full settings page remain unimplemented.
 
 ## Technology
 
@@ -34,7 +34,7 @@ npm run build         # Type-check and produce dist/
 npm run preview       # Serve the production build locally
 ```
 
-Phase 5 verification: `npm test` passed all 249 tests in 10 files: 71 new Phase 5 tests and all 178 earlier tests; `npm run typecheck`, `npm run lint` (zero warnings), `npm run format:check`, and `npm run build` passed.
+Phase 6 verification: `npm test` passed all 262 tests in 12 files: 13 new card/preview tests and all 249 earlier tests; `npm run typecheck`, `npm run lint` (zero warnings), `npm run format:check`, and `npm run build` passed.
 
 Tests cover all selectors, repeated Select All, multiple operation choices, exclusive difficulty/length choices, the 10-question default, native keyboard interactions, invalid submission, configuration handoff for each length, returning to setup, missing configuration, and existing navigation. The former setup-placeholder assertion now checks the functional setup page.
 
@@ -44,7 +44,7 @@ During Phase 3, Chrome verification passed at 1280, 768, 375, and 320 pixels wid
 
 Each reusable selector is a controlled component using native checkboxes or radio buttons, grouped by fieldsets and legends. Descriptions follow specification section 7. Selections are visible through the native checkmark/radio indicator as well as color. Feedback is announced through a status region and describes why Start Session is disabled.
 
-The setup page keeps draft choices in React state. Initially no operation or difficulty is selected, and length defaults to 10 questions. Submitting valid choices stores a `PracticeConfiguration` in a small React Context and navigates to `/practice/session`. This type uses `Pick<PracticeSession, 'operations' | 'difficulty' | 'sessionLength'>`, reusing the existing model instead of duplicating its fields. The session placeholder reads the same Context; returning to setup restores the last submitted choices.
+The setup page keeps draft choices in React state. Initially no operation or difficulty is selected, and length defaults to 10 questions. Submitting valid choices stores a `PracticeConfiguration` in a small React Context and navigates to `/practice/session`. This type uses `Pick<PracticeSession, 'operations' | 'difficulty' | 'sessionLength'>`, reusing the existing model instead of duplicating its fields. The session page and preview read the same Context; returning to setup restores the last submitted choices.
 
 Configuration is held in memory only. Refreshing or reopening clears it; a direct session visit without configuration explains what to do and links to setup. Draft changes that have not been submitted are not retained after leaving setup. Saved settings, session recovery, and localStorage belong to later phases. No session or question is generated in Phase 3.
 
@@ -54,7 +54,7 @@ Configuration is held in memory only. Refreshing or reopening clears it; a direc
 2. Check all four operations, four difficulty descriptions, and four lengths. **10 questions** should be selected, and **Start Session** disabled.
 3. Select a difficulty alone: Start Session remains disabled. Select an operation: it becomes enabled. Clear the last operation: it becomes disabled and feedback explains why.
 4. Select multiple operations, then try **Select All**. Toggle individual operations. Try every difficulty and length; each radio group should have at most one selection.
-5. Pick operations, difficulty, and length, then select **Start Session**. The session placeholder should display those exact choices. Use **Change practice choices** to return and confirm they are restored.
+5. Pick operations, difficulty, and length, then select **Start Session**. The session page should display those exact choices and one generated preview card. Use **Change practice choices** to return and confirm they are restored.
 6. Refresh the session page: it should show the missing-configuration explanation and a setup link.
 7. Use Tab/Space for checkboxes, arrow keys for radio options, and Enter on Start Session. Check the visible focus indicators.
 8. Resize to desktop, tablet, and mobile widths, including 320 pixels. Choices should stack on small screens without horizontal scrolling.
@@ -112,7 +112,7 @@ const mixed = generateMultipleChoiceQuestion(['addition', 'division'], 3)
 const completed = withAnswerChoices(addition)
 ```
 
-Here `addition` is the arithmetic question from the earlier example. `withAnswerChoices` returns a new complete question, preserving its ID, operands, difficulty, source, and optional mistake-pattern metadata. It does not modify the input. The Practice Session placeholder continues to display configuration only; these services are not connected to a question-card interface yet.
+Here `addition` is the arithmetic question from the earlier example. `withAnswerChoices` returns a new complete question, preserving its ID, operands, difficulty, source, and optional mistake-pattern metadata. It does not modify the input. The Phase 6 preview uses this complete-question API while keeping session progression deferred.
 
 ### Distractor strategies and termination
 
@@ -141,15 +141,45 @@ These complete examples are produced by deterministic tests. Production order an
 
 The new tests cover operation-specific mistakes, zeros/ones and maximum answers, repeated/unusable random draws, bounded fallback, immutable completion, every correct-answer position, malformed choices, arithmetic/difficulty preservation, error handling, and compatibility with every existing generator. Repeated checks generate 4,000 seeded complete questions across all 16 operation/difficulty combinations and 200 mixed questions with default randomness. Assertions check invariants rather than expecting a rare random arrangement to appear.
 
+## Interactive question cards (Phase 6)
+
+The session page now demonstrates one generated card using the submitted operations and difficulty. `QuestionCardPreview` generates a question during state initialization, so selecting an answer, toggling animation, or invoking a result callback does not replace the question. React Strict Mode may invoke initializers twice in development; only one question is committed to the preview. If generation fails, a friendly message appears and the existing setup/home links remain available.
+
+`AnswerChoice`, `CardFront`, and `CardBack` are small presentation components. `QuestionCard` owns selection and flip state, accepts a completed `Question`, displays question number/length (including continuous mode), and calls `onResult(selfReportedCorrect, selectedAnswer)` at most once. The callback reflects the student's self-report rather than calculating a score. A synchronous ref guard plus disabled buttons prevents both responses or repeated clicks from invoking it twice. A new question ID remounts the interaction to reset selection, flip state, and callback lock; a normal rerender of the same question preserves them.
+
+The preview callback only displays “Thanks for trying this card!” It records no attempt, statistics, or localStorage data and does not advance to another question. Returning to setup and starting again creates a fresh preview. The question count is presentation data from the configured length, not session progression.
+
+### Animation and accessibility
+
+The two faces occupy the same CSS grid area and use a 550ms CSS 3D rotation with hidden back faces, keeping them aligned and readable. Each answer is a native button with a visible selected marker and `aria-pressed`. The inactive face has both `aria-hidden` and `inert`, and its controls are disabled. The flip button remains disabled until a selection exists. After flipping, answer selection is locked, focus moves to the reveal heading, and a live status region announces the correct and selected answers. Tab, Space, and Enter use native button behavior; number-key shortcuts belong to the later accessibility phase.
+
+**Show card animation** is a local preview setting typed from the existing `AppSettings.cardAnimationEnabled` field. Turning it off removes the transition without affecting selection or reveal behavior. CSS also disables the transition under `prefers-reduced-motion`, regardless of the checkbox. This phase does not add persistent preferences or implement the Settings page.
+
+### Phase 6 verification and manual review
+
+New automated tests cover front/progress rendering, selection/change, flip gating, correct/selected answers, zero-valued answers, locked selection after reveal, one callback for either response, question-ID resets, same-question rerenders, continuous labels, keyboard interaction, animation toggling, stable generation, no storage writes, and generation failure handling. All prior tests remain unchanged and pass.
+
+Chrome checks passed at 1280, 768, 375, and 320 pixels wide for the front, with no horizontal overflow and answer targets over 48 pixels high. The back was checked at desktop/mobile widths down to 320 pixels. Both faces were visually inspected using desktop and mobile screenshots. Real Tab/Space/Enter interaction, focus transfer/visible focus, hidden-face accessibility-tree exclusion, callback locking, the animation toggle, and emulated reduced-motion were checked. No browser runtime or console errors appeared on the successful run. The first browser run timed out before setup rendered; a clean rerun passed. Other browsers and actual screen-reader speech have not been verified.
+
+To review manually:
+
+1. Run `npm run dev`, open the printed URL, choose practice operations/difficulty/length, and select **Start Session**.
+2. Confirm **Flip Card** is disabled. Select an answer, then a different one; only the current answer should show “Selected”.
+3. Flip the card. Confirm the equation, correct answer, and your selected answer appear; answer choices should no longer be available for editing.
+4. Select either result button. Both should disable and a thank-you message should appear. No new question or score should appear.
+5. Return to setup and start again. Turn off **Show card animation** and repeat. Then enable your browser/system reduced-motion preference and repeat with the checkbox on; reveal should still work without motion.
+6. Use Tab, Space, and Enter to complete the interaction. Focus should move to “Answer revealed” after flipping, then Tab should reach the result buttons.
+7. Resize to desktop/tablet/mobile widths. Check readable math, stacked mobile choices/result buttons, and no horizontal scrolling. Refreshing still returns to the existing missing-configuration explanation.
+
 ## Structure
 
 ```text
 src/
   app/          Routes, configuration Context/provider, and navigation tests
-  components/   Shared layout and reusable practice selectors/options
+  components/   Shared layout, practice selectors, card faces/interaction, preview, and tests
   pages/        Home, practice setup/tests, session preview, other placeholders, and fallback
   services/     Arithmetic/choice generators, distractors, rules, APIs, and unit tests
-  styles/       Global CSS and practice setup styles
+  styles/       Global CSS, practice setup, and responsive question-card animation styles
   test/         Shared test setup and DOM cleanup
   types/        Shared question, attempt/session, mistake, statistics, and settings models
   utils/        Random integers, shuffling, IDs, arithmetic validation, and unit tests

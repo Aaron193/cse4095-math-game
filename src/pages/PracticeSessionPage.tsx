@@ -1,4 +1,5 @@
 import { Link } from 'react-router'
+import QuestionCardPreview from '../components/practice/QuestionCardPreview'
 import { usePracticeConfiguration } from '../app/practiceConfigurationContext'
 import {
   difficultyOptions,
@@ -10,14 +11,13 @@ export default function PracticeSessionPage() {
   const { configuration } = usePracticeConfiguration()
   return (
     <section className="welcome" aria-labelledby="session-heading">
-      <p className="eyebrow">Coming soon</p>
+      <p className="eyebrow">
+        {configuration ? 'Question card preview' : 'Coming soon'}
+      </p>
       <h1 id="session-heading">Practice Session</h1>
       {configuration ? (
         <>
-          <p>
-            Your choices are ready! Math questions and answer cards are coming
-            in a later phase.
-          </p>
+          <p>Your choices are ready! Try one question below.</p>
           <dl className="configuration-summary">
             <dt>Operations</dt>
             <dd>
@@ -45,6 +45,7 @@ export default function PracticeSessionPage() {
               }
             </dd>
           </dl>
+          <QuestionCardPreview configuration={configuration} />
         </>
       ) : (
         <p>
