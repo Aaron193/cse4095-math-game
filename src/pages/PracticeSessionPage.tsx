@@ -7,5 +7,6 @@ export default function PracticeSessionPage() {
   const { state } = useSession()
   if (!state || !isPracticeConfiguration(state.session))
     return <Navigate to="/practice/setup" replace />
+  if (!state.isActive) return <Navigate to="/practice/summary" replace />
   return <PracticeSessionContent state={state} />
 }

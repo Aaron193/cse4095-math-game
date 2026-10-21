@@ -128,7 +128,7 @@ describe('functional practice session page', () => {
     await start(user)
     for (let index = 0; index < 5; index++) await answer(user, index % 2 === 0)
     expect(
-      screen.getByRole('heading', { name: 'Session complete!' }),
+      screen.getByRole('heading', { name: 'Session Summary' }),
     ).toHaveFocus()
     expect(total('Attempted')).toHaveTextContent('5')
     expect(total('Correct')).toHaveTextContent('3')
@@ -138,12 +138,18 @@ describe('functional practice session page', () => {
       screen.queryByRole('button', { name: 'Flip Card' }),
     ).not.toBeInTheDocument()
     expect(generator.generateMultipleChoiceQuestion).toHaveBeenCalledTimes(5)
-    await user.click(screen.getByRole('link', { name: 'Back to home' }))
+    await user.click(
+      screen.getByRole('link', {
+        name: screen.queryByRole('heading', { name: 'Session Summary' })
+          ? 'Return Home'
+          : 'Back to home',
+      }),
+    )
     await user.click(
       screen.getByRole('button', { name: 'Return to session route' }),
     )
     expect(
-      screen.getByRole('heading', { name: 'Session complete!' }),
+      screen.getByRole('heading', { name: 'Session Summary' }),
     ).toBeInTheDocument()
     expect(total('Attempted')).toHaveTextContent('5')
     expect(generator.generateMultipleChoiceQuestion).toHaveBeenCalledTimes(5)
@@ -155,7 +161,13 @@ describe('functional practice session page', () => {
     renderApp()
     await start(user)
     await answer(user, false)
-    await user.click(screen.getByRole('link', { name: 'Back to home' }))
+    await user.click(
+      screen.getByRole('link', {
+        name: screen.queryByRole('heading', { name: 'Session Summary' })
+          ? 'Return Home'
+          : 'Back to home',
+      }),
+    )
     await user.click(
       screen.getByRole('button', { name: 'Return to session route' }),
     )
@@ -189,7 +201,7 @@ describe('functional practice session page', () => {
     confirm.mockReturnValue(true)
     await user.click(screen.getByRole('button', { name: 'End Session' }))
     expect(
-      screen.getByRole('heading', { name: 'Session ended' }),
+      screen.getByRole('heading', { name: 'Session Summary' }),
     ).toBeInTheDocument()
     expect(total('Attempted')).toHaveTextContent('1')
     expect(total('Incorrect')).toHaveTextContent('1')

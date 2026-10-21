@@ -4,7 +4,7 @@ A university software development project for children ages 7–12 to practice a
 
 ## Current status
 
-Phases 1–7 are complete: shared layout/navigation, practice setup, validated math/multiple-choice generation, interactive cards, and functional practice sessions. Sessions support 5, 10, 20, or continuous questions, self-reported results, live totals, accessible progress, and a simple completion message. Results remain in React state only. The detailed Session Summary page, persistent history, aggregate statistics, mistake tracking, and full Settings page belong to later phases.
+Phases 1–8 are complete: shared layout/navigation, practice setup, validated math/multiple-choice generation, interactive cards, and functional practice sessions. Sessions support 5, 10, 20, or continuous questions, self-reported results, live totals, accessible progress, and automatic navigation to a detailed Session Summary. Summaries include totals, accuracy, configuration, review count, and follow-up actions. Results remain in React state only. Persistent history, aggregate statistics, mistake tracking, and the full Settings page belong to later phases.
 
 ## Technology
 
@@ -34,7 +34,7 @@ npm run build         # Type-check and produce dist/
 npm run preview       # Serve the production build locally
 ```
 
-Phase 7 verification: `npm test` passed all 295 tests in 15 files, including 33 new session tests; `npm run typecheck`, `npm run lint` (zero warnings), `npm run format:check`, and `npm run build` passed.
+Phase 8 verification: `npm test` passed all 322 tests in 17 files, including 27 new summary/calculation tests; `npm run typecheck`, `npm run lint` (zero warnings), `npm run format:check`, and `npm run build` passed.
 
 Tests cover all selectors, repeated Select All, multiple operation choices, exclusive difficulty/length choices, the 10-question default, native keyboard interactions, invalid submission, configuration handoff for each length, returning to setup, missing configuration, and existing navigation. The former setup-placeholder assertion now checks the functional setup page.
 
@@ -167,7 +167,7 @@ The next-question helper tries at most eight candidate draws to avoid an immedia
 
 ### Progress and completion
 
-`SessionProgress` displays attempted, correct, and incorrect totals. Fixed sessions show a labeled native progress bar from 0 to the selected count; continuous sessions show current question number and totals without fixed progress. At 5, 10, or 20 accepted answers, the session becomes inactive, records its completion timestamp, removes the card, and stops requesting questions. A simple completion message and totals are shown on the same route; the detailed Phase 8 summary page remains a placeholder.
+`SessionProgress` displays attempted, correct, and incorrect totals. Fixed sessions show a labeled native progress bar from 0 to the selected count; continuous sessions show current question number and totals without fixed progress. At 5, 10, or 20 accepted answers, the session becomes inactive, records its completion timestamp, removes the card, and stops requesting questions. The completed session now redirects to the Phase 8 summary page with the same retained state and timestamp; no additional question is generated.
 
 Continuous practice keeps generating questions until **End Session** is confirmed using the browser's native confirmation dialog. Cancel leaves the session unchanged. Confirm clears the unfinished card without counting it and displays an end message with completed-answer totals. Ending a session twice or responding after it ended cannot change its counts.
 
@@ -184,10 +184,43 @@ Chrome completed a real five-question session with three right and two wrong sel
 1. Run `npm run dev`, open the printed URL, and select operations, difficulty, and **5 questions** in setup.
 2. Start Session. Confirm all totals are zero, the card says **Question 1 of 5**, and progress starts at 0 of 5.
 3. Select an answer, flip, and mark it right or wrong. Confirm one attempt is added, the matching total increases, and the next card has no selected answer and a disabled Flip Card button.
-4. Complete five questions, reporting three right and two wrong. Confirm totals are **5 attempted / 3 correct / 2 incorrect**, progress is full, and no new card appears. Repeat with 10 or 20 questions if desired.
-5. Go home and use browser Back to return to the completed session. Confirm it stays completed. Use setup and **Start Session** to intentionally start a fresh session.
+4. Complete five questions, reporting three right and two wrong. Confirm navigation to **Session Summary**, totals of **5 attempted / 3 correct / 2 incorrect**, **60% accuracy**, and no new card. Repeat with 10 or 20 questions if desired.
+5. Use **Return Home** and browser Back to return to the summary. Confirm it stays completed. Use setup and **Start Session** to intentionally start a fresh session.
 6. Start continuous practice. Complete a few questions, select **End Session**, and cancel: the session should continue unchanged. End again and confirm: only completed questions should appear in the totals.
 7. Test keyboard controls, animation on/off, reduced motion, and mobile widths. Refreshing clears the React-only session and returns to setup, as expected before persistence/recovery are implemented.
+
+## Session summary (Phase 8)
+
+Fixed sessions automatically navigate to `/practice/summary` after their final answer; continuous sessions navigate there after confirming **End Session**. The session page redirects inactive sessions with React Router `Navigate` using replacement navigation. Completion detection, stopping generation, timestamps, and duplicate guards continue to use the existing Phase 7 service. Navigating to the summary only reads the retained Context state and never generates a question or restarts a session.
+
+`SessionSummaryPage` reuses `SessionProgress` for attempted/correct/incorrect totals and finished fixed progress. It shows the selected operations and difficulty, accuracy, and completed mistake-review count. The count is derived from attempt sources and remains zero for all currently available regular practice. This does not introduce mistake-review generation or aggregate statistics.
+
+`sessionAccuracy` calculates `correct / attempted × 100`, rounded to one decimal place when needed. Zero attempts returns 0%, avoiding division by zero. Invalid numeric totals are rejected by the calculation helper. Results reflect self-reported correctness, consistent with the session/card behavior.
+
+### Summary actions
+
+- **Practice Again** explicitly creates a new session using a copy of the completed configuration, resets attempts/totals/index, generates a new question with a fresh ID, and opens the session route. The old attempt list and scores are not reused. Random arithmetic facts may naturally recur; session state and question objects are newly generated.
+- **Practice Mistakes** displays an accessible coming-soon message and leaves the summary unchanged. No review mode is implemented yet.
+- **Change Settings** returns to practice setup to change operations, difficulty, and length. It does not implement the separate application Settings page.
+- **View Statistics** opens the existing statistics placeholder.
+- **Return Home** navigates home while retaining the current completed session in memory.
+
+Only one current session is retained. Starting again intentionally replaces it; previous-session history and persistence remain deferred. Refreshing or opening the summary URL without in-memory completed data shows a friendly message and links to setup/home. If an unfinished session exists, the summary instead explains that it must be finished and offers **Continue Session**. No partial session is presented as completed, and these cases do not create a session automatically.
+
+### Phase 8 verification and manual review
+
+New tests cover valid/invalid accuracy calculations and rounding, zero-attempt continuous sessions, all displayed totals/metadata, review-source counting, summary actions, missing/active-session handling, automatic fixed/continuous navigation, retained results, no extra question after completion, and fresh Practice Again behavior. The prior session/navigation tests retain their scenarios with updated expectations for the real summary route, title, and home action. The first run caught a definition-list test helper reading the wrong value and a misplaced route comparison in a test; both were corrected before all checks passed.
+
+Chrome completed a five-question session and confirmed 5 attempted / 3 correct / 2 incorrect / 60% accuracy. Summary screenshots were inspected at desktop/mobile widths; layout checks passed at 1280, 768, 375, and 320 pixels with no horizontal overflow. All five actions, browser Back restoring the summary, keyboard activation of Practice Again, fresh zero totals/card reset, continuous cancel/confirm ending at zero and two attempts, 0%/50% accuracy respectively, and missing-data behavior on direct summary visits were verified. No browser runtime or console errors appeared. Browser data remained unwritten; cross-browser and actual screen-reader testing remain for later verification.
+
+To verify manually:
+
+1. Run `npm run dev` and start a five-question session. Mark three answers right and two wrong. Confirm automatic navigation to **Session Summary** with totals **5 / 3 / 2**, **60% accuracy**, your operations/difficulty, and **0** mistake-review questions.
+2. Check **Practice Mistakes** shows its message. Try **View Statistics**, **Change Settings**, and **Return Home**; use browser Back to confirm the finished results remain available.
+3. Select **Practice Again**. Confirm the same operations/difficulty/length, zero totals, Question 1, and a card with no selected answer. Complete it normally to produce another summary.
+4. Start continuous practice and end immediately: summary totals and accuracy should all be zero. Repeat with one right and one wrong result: expect 2 attempted and 50% accuracy. Canceling the end confirmation should keep practicing.
+5. Refresh the summary or open it directly in a fresh page. Check the helpful missing-session message and setup/home links.
+6. Check mobile widths and keyboard navigation. Summary actions stack on smaller screens, and focus moves to the summary heading after navigation.
 
 ## Structure
 
@@ -196,12 +229,12 @@ src/
   app/          Routes, configuration/session providers, and navigation tests
   components/   Layout, selectors, cards, session content/progress, preview, and tests
   hooks/        Session state/transition hook and tests
-  pages/        Home, setup/session pages and tests, other placeholders, and fallback
+  pages/        Home, setup/session/summary pages and tests, other placeholders, and fallback
   services/     Generators, distractors, rules, session transitions, and unit tests
-  styles/       Global, setup, card, and responsive session/progress styles
+  styles/       Global, setup, card, session/progress, and responsive summary styles
   test/         Shared test setup and DOM cleanup
   types/        Shared question, attempt/session, mistake, statistics, and settings models
-  utils/        Random integers, shuffling, IDs, arithmetic validation, and unit tests
+  utils/        Random integers, shuffling, IDs, validation, session accuracy, and unit tests
   main.tsx      React entry point and BrowserRouter
 ```
 

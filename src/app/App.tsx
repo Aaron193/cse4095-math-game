@@ -5,6 +5,7 @@ import NotFoundPage from '../pages/NotFoundPage'
 import PlaceholderPage from '../pages/PlaceholderPage'
 import PracticeSetupPage from '../pages/PracticeSetupPage'
 import PracticeSessionPage from '../pages/PracticeSessionPage'
+import SessionSummaryPage from '../pages/SessionSummaryPage'
 import PracticeConfigurationProvider from './PracticeConfigurationProvider'
 import PracticeSessionProvider from './PracticeSessionProvider'
 
@@ -17,15 +18,7 @@ export default function App() {
             <Route index element={<HomePage />} />
             <Route path="practice/setup" element={<PracticeSetupPage />} />
             <Route path="practice/session" element={<PracticeSessionPage />} />
-            <Route
-              path="practice/summary"
-              element={
-                <PlaceholderPage
-                  title="Session Summary"
-                  description="After a practice session, you’ll see how you did here."
-                />
-              }
-            />
+            <Route path="practice/summary" element={<SessionSummaryPage />} />
             <Route
               path="statistics"
               element={
