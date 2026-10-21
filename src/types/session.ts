@@ -30,3 +30,9 @@ export interface PracticeSession {
   correct: number
   incorrect: number
 }
+
+/** Setup choices only; no session progress or generated questions. */
+export type PracticeConfiguration = Pick<
+  PracticeSession,
+  'operations' | 'difficulty' | 'sessionLength'
+>

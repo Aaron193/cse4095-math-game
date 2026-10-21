@@ -4,7 +4,7 @@ A university software development project for children ages 7–12 to practice a
 
 ## Current status
 
-Phases 1 and 2 are complete: shared page layout and header navigation, a welcoming home page with three navigation actions, six application routes, a not-found fallback, shared TypeScript models, and development tooling. Practice Setup, Practice Session, Session Summary, Statistics, and Settings currently show descriptive placeholders with a way home. Question generation, flashcards, session behavior, storage, statistics calculations, and settings behavior are not implemented.
+Phases 1–3 are complete: shared layout/navigation, a home page, practice configuration, six routes, shared types, and development tooling. Practice Setup provides operation, difficulty, and length selectors with accessible validation. Start Session opens a placeholder displaying the selected choices. Session Summary, Statistics, and Settings remain placeholders. Question generation, flashcards, session progress, persistence, statistics calculations, and settings behavior are not implemented.
 
 ## Technology
 
@@ -34,36 +34,46 @@ npm run build         # Type-check and produce dist/
 npm run preview       # Serve the production build locally
 ```
 
-Phase 2 verification: `npm test` passed all 15 tests, including the original three Phase 1 tests; `npm run typecheck`, `npm run lint` (zero warnings), `npm run format:check`, and `npm run build` passed.
+Phase 3 verification: `npm test` passed all 37 tests (22 setup/configuration tests and 15 earlier shell/navigation tests); `npm run typecheck`, `npm run lint` (zero warnings), `npm run format:check`, and `npm run build` passed.
 
-Tests cover the shell, skip-link keyboard access, all three home actions by click and keyboard, all five placeholder routes and their home links, header navigation/current-page state, and unknown-route recovery. All pages use the existing nested React Router layout. Navigation actions are links styled as buttons, preserving link semantics and client navigation. The five unfinished pages reuse one placeholder component to keep this phase small.
+Tests cover all selectors, repeated Select All, multiple operation choices, exclusive difficulty/length choices, the 10-question default, native keyboard interactions, invalid submission, configuration handoff for each length, returning to setup, missing configuration, and existing navigation. The former setup-placeholder assertion now checks the functional setup page.
 
-Chrome browser verification passed at 1280, 768, 375, and 320 pixels wide with no horizontal overflow and home action targets at least 48 pixels high. Desktop and mobile screenshots were visually inspected. Real Tab/Enter activation, visible focus, navigation without a document reload, browser Back/Forward, direct visits, refresh, and return-home navigation were checked. No runtime or console errors were reported. These checks cover Chrome, not all supported browsers.
+Chrome verification passed at 1280, 768, 375, and 320 pixels wide, with no horizontal overflow and choice targets at least 48 pixels high. Desktop/mobile screenshots were visually inspected. Browser checks covered validation, Select All, radio exclusivity, configuration transfer without reloading, return-to-setup choices, Tab/Space/arrow keys, Enter submission, visible focus, and the safe state after refresh. No runtime or console errors were reported. Other browsers and screen readers have not been tested.
+
+### Practice configuration design
+
+Each reusable selector is a controlled component using native checkboxes or radio buttons, grouped by fieldsets and legends. Descriptions follow specification section 7. Selections are visible through the native checkmark/radio indicator as well as color. Feedback is announced through a status region and describes why Start Session is disabled.
+
+The setup page keeps draft choices in React state. Initially no operation or difficulty is selected, and length defaults to 10 questions. Submitting valid choices stores a `PracticeConfiguration` in a small React Context and navigates to `/practice/session`. This type uses `Pick<PracticeSession, 'operations' | 'difficulty' | 'sessionLength'>`, reusing the existing model instead of duplicating its fields. The session placeholder reads the same Context; returning to setup restores the last submitted choices.
+
+Configuration is held in memory only. Refreshing or reopening clears it; a direct session visit without configuration explains what to do and links to setup. Draft changes that have not been submitted are not retained after leaving setup. Saved settings, session recovery, and localStorage belong to later phases. No session or question is generated in Phase 3.
 
 ### Manual interface check
 
-1. Run `npm run dev` and open the URL Vite prints.
-2. At `/`, select **Start Practice**, **View Statistics**, and **Settings**, returning home between each. Check their headings and placeholder messages.
-3. Use the header links to move between Home, Practice, Statistics, and Settings. Check the current navigation item is highlighted.
-4. Directly open and refresh `/practice/setup`, `/practice/session`, `/practice/summary`, `/statistics`, and `/settings`. Each should show its placeholder and **Back to home** link.
-5. Visit `/unknown-page` and use **Back to home**. Try the browser Back and Forward buttons.
-6. Reload home, press Tab to reveal the skip link, then use Tab and Enter to reach and open each home action. Check focus is clearly visible.
-7. Resize to tablet/mobile widths (including 320 pixels). Home actions should stack, navigation should wrap, and text should remain readable without horizontal scrolling.
+1. Run `npm run dev`, open the printed URL, and select **Start Practice**.
+2. Check all four operations, four difficulty descriptions, and four lengths. **10 questions** should be selected, and **Start Session** disabled.
+3. Select a difficulty alone: Start Session remains disabled. Select an operation: it becomes enabled. Clear the last operation: it becomes disabled and feedback explains why.
+4. Select multiple operations, then try **Select All**. Toggle individual operations. Try every difficulty and length; each radio group should have at most one selection.
+5. Pick operations, difficulty, and length, then select **Start Session**. The session placeholder should display those exact choices. Use **Change practice choices** to return and confirm they are restored.
+6. Refresh the session page: it should show the missing-configuration explanation and a setup link.
+7. Use Tab/Space for checkboxes, arrow keys for radio options, and Enter on Start Session. Check the visible focus indicators.
+8. Resize to desktop, tablet, and mobile widths, including 320 pixels. Choices should stack on small screens without horizontal scrolling.
+9. Check Home, Statistics, Settings, browser Back/Forward, and the unknown-route fallback still work.
 
 ## Structure
 
 ```text
 src/
-  app/          Route definitions and application integration tests
-  components/   Existing layout plus layout/Header, Navigation, and PageContainer
-  pages/        Home, reusable placeholder, and not-found pages
-  styles/       Global CSS
+  app/          Routes, configuration Context/provider, and navigation tests
+  components/   Shared layout and reusable practice selectors/options
+  pages/        Home, practice setup/tests, session preview, other placeholders, and fallback
+  styles/       Global CSS and practice setup styles
   test/         Shared test setup and DOM cleanup
   types/        Shared question, attempt/session, mistake, statistics, and settings models
   main.tsx      React entry point and BrowserRouter
 ```
 
-Shared models follow specification sections 8 and 10. Settings fields represent the preferences in section 6.7; they define data only and do not implement settings behavior. Session lengths retain the specification’s `number | "continuous"` type; allowed values and other runtime validation belong to later phases. Add feature modules and storage helpers when their phases require them. The repository root contains Vite, TypeScript, and lint configuration, the npm lockfile, and project documentation.
+Shared models follow specification sections 8 and 10. Settings fields represent the preferences in section 6.7; they define data only and do not implement settings behavior. Session lengths retain the specification’s `number | "continuous"` type; the setup form limits choices to 5, 10, 20, or continuous. General storage/session validation belongs to later phases. Add feature modules and storage helpers when their phases require them. The repository root contains Vite, TypeScript, and lint configuration, the npm lockfile, and project documentation.
 
 Prettier excludes the authoritative `specification.md` and `TODO.md` so routine formatting preserves those reference documents. ESLint and Prettier run separately; `eslint-config-prettier` disables conflicting style rules.
 

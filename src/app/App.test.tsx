@@ -57,7 +57,7 @@ const homeActions = [
   ['Settings', '/settings', 'Settings'],
 ] as const
 
-const placeholderRoutes = [
+const pageRoutes = [
   ['/practice/setup', 'Practice Setup'],
   ['/practice/session', 'Practice Session'],
   ['/practice/summary', 'Session Summary'],
@@ -113,15 +113,17 @@ describe('home navigation', () => {
 })
 
 describe('application routes', () => {
-  it.each(placeholderRoutes)(
-    '%s opens a descriptive placeholder with a way home',
+  it.each(pageRoutes)(
+    '%s opens the expected page with a way home',
     async (path, heading) => {
       const user = userEvent.setup()
       renderApp(path)
       expect(
         screen.getByRole('heading', { level: 1, name: heading }),
       ).toBeInTheDocument()
-      expect(screen.getByText('Coming soon')).toBeInTheDocument()
+      if (path !== '/practice/setup') {
+        expect(screen.getByText('Coming soon')).toBeInTheDocument()
+      }
       await user.click(screen.getByRole('link', { name: 'Back to home' }))
       expect(
         screen.getByRole('heading', { level: 1, name: 'Math Practice App' }),
