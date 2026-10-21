@@ -1,4 +1,6 @@
-import { Link, Outlet } from 'react-router'
+import { Outlet } from 'react-router'
+import Header from './layout/Header'
+import PageContainer from './layout/PageContainer'
 
 export default function AppLayout() {
   return (
@@ -6,16 +8,10 @@ export default function AppLayout() {
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>
-      <header className="site-header">
-        <nav aria-label="Main navigation">
-          <Link className="home-link" to="/">
-            Home
-          </Link>
-        </nav>
-      </header>
-      <main id="main-content" tabIndex={-1}>
+      <Header />
+      <PageContainer>
         <Outlet />
-      </main>
+      </PageContainer>
       <footer>One step at a time. Every step counts.</footer>
     </>
   )

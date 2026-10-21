@@ -4,7 +4,7 @@ A university software development project for children ages 7–12 to practice a
 
 ## Current status
 
-Phase 1 setup is complete: a responsive application shell, a routed home page, an unknown-route fallback, shared TypeScript models, ESLint/Prettier tooling, and automated tests. Question generation, flashcards, sessions, storage, statistics, and settings are planned and are not implemented.
+Phases 1 and 2 are complete: shared page layout and header navigation, a welcoming home page with three navigation actions, six application routes, a not-found fallback, shared TypeScript models, and development tooling. Practice Setup, Practice Session, Session Summary, Statistics, and Settings currently show descriptive placeholders with a way home. Question generation, flashcards, session behavior, storage, statistics calculations, and settings behavior are not implemented.
 
 ## Technology
 
@@ -34,17 +34,29 @@ npm run build         # Type-check and produce dist/
 npm run preview       # Serve the production build locally
 ```
 
-Phase 1 alignment verification: `npm test` passed all 3 component tests; `npm run typecheck`, `npm run lint` (ESLint, zero warnings), `npm run format:check`, and `npm run build` passed. A development-server HTTP smoke check passed for the app HTML, transformed React entry point, and App module on an automatically assigned free port. Visual browser checks have not been performed. Follow the URL printed by Vite when starting the app.
+Phase 2 verification: `npm test` passed all 15 tests, including the original three Phase 1 tests; `npm run typecheck`, `npm run lint` (zero warnings), `npm run format:check`, and `npm run build` passed.
 
-Tests cover the home shell, navigation home from an unknown URL, and keyboard access to the skip link. jsdom tests do not verify visual layout in a real browser. For a manual check, open the home page, resize the window, press Tab to see the skip link, and visit `/missing-page` and follow “Back to home”.
+Tests cover the shell, skip-link keyboard access, all three home actions by click and keyboard, all five placeholder routes and their home links, header navigation/current-page state, and unknown-route recovery. All pages use the existing nested React Router layout. Navigation actions are links styled as buttons, preserving link semantics and client navigation. The five unfinished pages reuse one placeholder component to keep this phase small.
+
+Chrome browser verification passed at 1280, 768, 375, and 320 pixels wide with no horizontal overflow and home action targets at least 48 pixels high. Desktop and mobile screenshots were visually inspected. Real Tab/Enter activation, visible focus, navigation without a document reload, browser Back/Forward, direct visits, refresh, and return-home navigation were checked. No runtime or console errors were reported. These checks cover Chrome, not all supported browsers.
+
+### Manual interface check
+
+1. Run `npm run dev` and open the URL Vite prints.
+2. At `/`, select **Start Practice**, **View Statistics**, and **Settings**, returning home between each. Check their headings and placeholder messages.
+3. Use the header links to move between Home, Practice, Statistics, and Settings. Check the current navigation item is highlighted.
+4. Directly open and refresh `/practice/setup`, `/practice/session`, `/practice/summary`, `/statistics`, and `/settings`. Each should show its placeholder and **Back to home** link.
+5. Visit `/unknown-page` and use **Back to home**. Try the browser Back and Forward buttons.
+6. Reload home, press Tab to reveal the skip link, then use Tab and Enter to reach and open each home action. Check focus is clearly visible.
+7. Resize to tablet/mobile widths (including 320 pixels). Home actions should stack, navigation should wrap, and text should remain readable without horizontal scrolling.
 
 ## Structure
 
 ```text
 src/
   app/          Route definitions and application integration tests
-  components/   Shared application layout
-  pages/        Home and not-found pages
+  components/   Existing layout plus layout/Header, Navigation, and PageContainer
+  pages/        Home, reusable placeholder, and not-found pages
   styles/       Global CSS
   test/         Shared test setup and DOM cleanup
   types/        Shared question, attempt/session, mistake, statistics, and settings models

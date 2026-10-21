@@ -5,7 +5,9 @@ export default function NotFoundPage() {
     <section className="welcome" aria-labelledby="not-found-heading">
       <h1 id="not-found-heading">Page not found</h1>
       <p>Let’s head back to the start.</p>
-      <Link to="/">Back to home</Link>
+      <Link className="button" to="/">
+        Back to home
+      </Link>
     </section>
   )
 }
