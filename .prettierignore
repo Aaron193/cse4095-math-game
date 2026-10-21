@@ -1,0 +1,6 @@
+node_modules/
+dist/
+package-lock.json
+# Authoritative assignment references: preserve their original formatting.
+specification.md
+TODO.md
