@@ -42,7 +42,7 @@ export type PracticeConfiguration = Pick<
   'operations' | 'difficulty' | 'sessionLength'
 >
 
-/** Runtime session data held only in React state until the persistence phase. */
+/** The active card stays in React state; attempts and session metadata are persisted. */
 export interface PracticeSessionState {
   session: PracticeSession
   currentQuestionIndex: number

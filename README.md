@@ -1,14 +1,14 @@
 # Math Practice App
 
-A university software development project for children ages 7–12 to practice addition, subtraction, multiplication, and division. Development proceeds one approved phase at a time with AI assistance.
+A university software development project for children ages 7–12 to practice addition, subtraction, multiplication, and division. Development proceeds through approved phases with AI assistance.
 
 ## Current status
 
-Phases 1–8 are complete: shared layout/navigation, practice setup, validated math/multiple-choice generation, interactive cards, and functional practice sessions. Sessions support 5, 10, 20, or continuous questions, self-reported results, live totals, accessible progress, and automatic navigation to a detailed Session Summary. Summaries include totals, accuracy, configuration, review count, and follow-up actions. Results remain in React state only. Persistent history, aggregate statistics, mistake tracking, and the full Settings page belong to later phases.
+Phases 1–11 are complete: shared navigation, configurable practice, validated multiple-choice questions, interactive cards, fixed/continuous sessions, summaries, persistent history, statistics, and application settings. Results are self-reported. Browser localStorage preserves attempts, session metadata, statistics, and preferences. Mistake tracking/review begins in Phase 12 and is not implemented. Sound and step-by-step explanations are visibly unavailable; card animations work and can be disabled.
 
 ## Technology
 
-React, TypeScript, Vite, React Router (declarative routing), and plain CSS. Tests use Vitest, React Testing Library, jest-dom, user-event, and jsdom. ESLint provides JavaScript/TypeScript and React checks; Prettier provides consistent formatting. Future persistence will use browser localStorage; no backend, database, authentication, or registration is required.
+React, TypeScript, Vite, React Router (declarative routing), and plain CSS. Tests use Vitest, React Testing Library, jest-dom, user-event, and jsdom. ESLint provides JavaScript/TypeScript and React checks; Prettier provides consistent formatting. Persistence uses browser localStorage; no backend, database, authentication, or registration is required.
 
 ## Run locally
 
@@ -34,6 +34,8 @@ npm run build         # Type-check and produce dist/
 npm run preview       # Serve the production build locally
 ```
 
+Phases 9–11 verification: all 369 tests in 22 files passed, along with TypeScript, ESLint (zero warnings), formatting, and the production build. Each phase was checked before the next began; Chrome persistence and reset checks are described below.
+
 Phase 8 verification: `npm test` passed all 322 tests in 17 files, including 27 new summary/calculation tests; `npm run typecheck`, `npm run lint` (zero warnings), `npm run format:check`, and `npm run build` passed.
 
 Tests cover all selectors, repeated Select All, multiple operation choices, exclusive difficulty/length choices, the 10-question default, native keyboard interactions, invalid submission, configuration handoff for each length, returning to setup, missing configuration, and existing navigation. The former setup-placeholder assertion now checks the functional setup page.
@@ -44,18 +46,18 @@ During Phase 3, Chrome verification passed at 1280, 768, 375, and 320 pixels wid
 
 Each reusable selector is a controlled component using native checkboxes or radio buttons, grouped by fieldsets and legends. Descriptions follow specification section 7. Selections are visible through the native checkmark/radio indicator as well as color. Feedback is announced through a status region and describes why Start Session is disabled.
 
-The setup page keeps draft choices in React state. Initially no operation or difficulty is selected, and length defaults to 10 questions. Submitting valid choices stores a `PracticeConfiguration` in a small React Context and navigates to `/practice/session`. This type uses `Pick<PracticeSession, 'operations' | 'difficulty' | 'sessionLength'>`, reusing the existing model instead of duplicating its fields. Submitting setup now also explicitly starts a session. Its separate Context stores a snapshot of those choices; returning to setup restores the last submitted choices.
+The setup page keeps draft choices in React state. The initial defaults are Addition, Beginner, and 10 questions; saved defaults replace these on later visits. Submitting valid choices stores a `PracticeConfiguration` in a small React Context and navigates to `/practice/session`. This type uses `Pick<PracticeSession, 'operations' | 'difficulty' | 'sessionLength'>`, reusing the existing model instead of duplicating its fields. Submitting setup now also explicitly starts a session. Its separate Context stores a snapshot of those choices; returning to setup restores the last submitted choices unless application defaults have since changed.
 
-Configuration is held in memory only. Refreshing or reopening clears it; a direct session visit without valid session data redirects to setup. Draft changes that have not been submitted are not retained after leaving setup. Saved settings, session recovery, and localStorage belong to later phases. No session or question is generated in Phase 3.
+Per-session overrides and unsaved drafts remain in memory. Saved default choices persist and initialize setup after reload. Starting a session generates its first question. Active-card recovery is still deferred; completed attempts are saved immediately, and the most recent completed summary can be restored after reload.
 
 ### Manual interface check
 
 1. Run `npm run dev`, open the printed URL, and select **Start Practice**.
-2. Check all four operations, four difficulty descriptions, and four lengths. **10 questions** should be selected, and **Start Session** disabled.
-3. Select a difficulty alone: Start Session remains disabled. Select an operation: it becomes enabled. Clear the last operation: it becomes disabled and feedback explains why.
+2. Check all four operations, four difficulty descriptions, and four lengths. **Addition**, **Beginner**, and **10 questions** should initially be selected, with **Start Session** enabled (or your saved defaults applied).
+3. Clear the last operation: Start Session becomes disabled and feedback explains why. Select an operation: it becomes enabled again.
 4. Select multiple operations, then try **Select All**. Toggle individual operations. Try every difficulty and length; each radio group should have at most one selection.
 5. Pick operations, difficulty, and length, then select **Start Session**. The session page should display those exact choices, zero totals, a generated card, and fixed progress when applicable. Use **Change practice choices** to return and confirm they are restored.
-6. Refresh the session page: it should redirect to setup because session recovery is a later phase.
+6. Refresh: completed answers remain in statistics. The unfinished card is not resumed; the session route shows a restored completed summary when one exists, otherwise setup.
 7. Use Tab/Space for checkboxes, arrow keys for radio options, and Enter on Start Session. Check the visible focus indicators.
 8. Resize to desktop, tablet, and mobile widths, including 320 pixels. Choices should stack on small screens without horizontal scrolling.
 9. Check Home, Statistics, Settings, browser Back/Forward, and the unknown-route fallback still work.
@@ -147,15 +149,15 @@ The new tests cover operation-specific mistakes, zeros/ones and maximum answers,
 
 The two faces share a CSS grid area and use a 550ms 3D rotation with hidden back faces. Native answer buttons show a selected marker and `aria-pressed`. The inactive face is `aria-hidden`, inert, and disabled. Flip remains disabled until an answer is selected. Revealing locks the answer, focuses the reveal heading, and announces both answers. Tab, Space, and Enter use native behavior; number-key shortcuts belong to a later accessibility phase.
 
-**Show card animation** remains a local control typed from `AppSettings.cardAnimationEnabled`. Disabling it or requesting reduced motion removes motion without preventing answer reveal. Persistent settings remain deferred. The standalone Phase 6 `QuestionCardPreview` and its tests remain available for isolated component verification; the application route now uses the functional session flow below.
+**Show card animation** uses the persisted `AppSettings.cardAnimationEnabled` preference. Disabling it or requesting reduced motion removes motion without preventing answer reveal. The standalone Phase 6 `QuestionCardPreview` and its tests remain available for isolated component verification; the application route now uses the functional session flow below.
 
 ## Practice sessions (Phase 7)
 
 ### State and lifecycle
 
-`PracticeSessionProvider` owns the `usePracticeSession` hook above the routes, retaining the current session across client navigation. The typed state reuses `PracticeSession`, `PracticeAttempt`, `Question`, and `PracticeConfiguration`, adding the current question index, active flag, current question, attempts, and a recoverable loading error. No data is written to localStorage or a server.
+`PracticeSessionProvider` owns the `usePracticeSession` hook above the routes, retaining the current session across client navigation. The typed state reuses `PracticeSession`, `PracticeAttempt`, `Question`, and `PracticeConfiguration`, adding the current question index, active flag, current question, attempts, and a recoverable loading error. Accepted attempts and session metadata are now written through `AppDataProvider` to localStorage. No data is sent to a server.
 
-Only a valid **Start Session** submission creates a session, UUID, start timestamp, copied configuration, and first question. Rendering, navigating back, toggling animation, or returning to a completed session cannot implicitly start another one. Submitting setup again intentionally replaces the previous session. Refreshing/reopening loses all in-memory results and redirects session URLs to setup. Only the current session is retained; multi-session history is a later feature.
+Only a valid **Start Session** submission creates a session, UUID, start timestamp, copied configuration, and first question. Rendering, navigating back, toggling animation, or returning to a completed session cannot implicitly start another one. Submitting setup again intentionally replaces the previous session. Refreshing/reopening preserves accepted answers and session history. The current unfinished card is not recovered; completed summaries can be restored without generating questions.
 
 ### Attempts and progression
 
@@ -169,7 +171,7 @@ The next-question helper tries at most eight candidate draws to avoid an immedia
 
 `SessionProgress` displays attempted, correct, and incorrect totals. Fixed sessions show a labeled native progress bar from 0 to the selected count; continuous sessions show current question number and totals without fixed progress. At 5, 10, or 20 accepted answers, the session becomes inactive, records its completion timestamp, removes the card, and stops requesting questions. The completed session now redirects to the Phase 8 summary page with the same retained state and timestamp; no additional question is generated.
 
-Continuous practice keeps generating questions until **End Session** is confirmed using the browser's native confirmation dialog. Cancel leaves the session unchanged. Confirm clears the unfinished card without counting it and displays an end message with completed-answer totals. Ending a session twice or responding after it ended cannot change its counts.
+Continuous practice keeps generating questions until **End Session** is confirmed using the browser's native confirmation dialog. Cancel leaves the session unchanged. Confirm clears the unfinished card without counting it and navigates to the summary with completed-answer totals. Ending a session twice or responding after it ended cannot change its counts.
 
 New questions have a short 150ms fade, disabled by the animation control and reduced-motion CSS. The existing card animation remains unchanged. Responsive totals stack on very narrow screens so labels stay readable.
 
@@ -187,13 +189,13 @@ Chrome completed a real five-question session with three right and two wrong sel
 4. Complete five questions, reporting three right and two wrong. Confirm navigation to **Session Summary**, totals of **5 attempted / 3 correct / 2 incorrect**, **60% accuracy**, and no new card. Repeat with 10 or 20 questions if desired.
 5. Use **Return Home** and browser Back to return to the summary. Confirm it stays completed. Use setup and **Start Session** to intentionally start a fresh session.
 6. Start continuous practice. Complete a few questions, select **End Session**, and cancel: the session should continue unchanged. End again and confirm: only completed questions should appear in the totals.
-7. Test keyboard controls, animation on/off, reduced motion, and mobile widths. Refreshing clears the React-only session and returns to setup, as expected before persistence/recovery are implemented.
+7. Test keyboard controls, animation on/off, reduced motion, and mobile widths. Refreshing keeps accepted answers and preferences in storage, but does not recover the current unfinished card.
 
 ## Session summary (Phase 8)
 
 Fixed sessions automatically navigate to `/practice/summary` after their final answer; continuous sessions navigate there after confirming **End Session**. The session page redirects inactive sessions with React Router `Navigate` using replacement navigation. Completion detection, stopping generation, timestamps, and duplicate guards continue to use the existing Phase 7 service. Navigating to the summary only reads the retained Context state and never generates a question or restarts a session.
 
-`SessionSummaryPage` reuses `SessionProgress` for attempted/correct/incorrect totals and finished fixed progress. It shows the selected operations and difficulty, accuracy, and completed mistake-review count. The count is derived from attempt sources and remains zero for all currently available regular practice. This does not introduce mistake-review generation or aggregate statistics.
+`SessionSummaryPage` reuses `SessionProgress` for attempted/correct/incorrect totals and finished fixed progress. It shows the selected operations and difficulty, accuracy, and completed mistake-review count. The count is derived from attempt sources and remains zero for all currently available regular practice. Mistake-review generation remains deferred; aggregate statistics are now implemented in Phase 10.
 
 `sessionAccuracy` calculates `correct / attempted × 100`, rounded to one decimal place when needed. Zero attempts returns 0%, avoiding division by zero. Invalid numeric totals are rejected by the calculation helper. Results reflect self-reported correctness, consistent with the session/card behavior.
 
@@ -202,10 +204,10 @@ Fixed sessions automatically navigate to `/practice/summary` after their final a
 - **Practice Again** explicitly creates a new session using a copy of the completed configuration, resets attempts/totals/index, generates a new question with a fresh ID, and opens the session route. The old attempt list and scores are not reused. Random arithmetic facts may naturally recur; session state and question objects are newly generated.
 - **Practice Mistakes** displays an accessible coming-soon message and leaves the summary unchanged. No review mode is implemented yet.
 - **Change Settings** returns to practice setup to change operations, difficulty, and length. It does not implement the separate application Settings page.
-- **View Statistics** opens the existing statistics placeholder.
+- **View Statistics** opens the statistics page backed by persisted attempts.
 - **Return Home** navigates home while retaining the current completed session in memory.
 
-Only one current session is retained. Starting again intentionally replaces it; previous-session history and persistence remain deferred. Refreshing or opening the summary URL without in-memory completed data shows a friendly message and links to setup/home. If an unfinished session exists, the summary instead explains that it must be finished and offers **Continue Session**. No partial session is presented as completed, and these cases do not create a session automatically.
+One current session is held in React state, while previous sessions and their attempts persist in history. Starting again replaces the current card without deleting history. Refreshing restores the most recent saved completed summary. Opening the summary without any completed session shows a friendly message and setup/home links. If an unfinished session exists, the summary instead explains that it must be finished and offers **Continue Session**. No partial session is presented as completed, and these cases do not create a session automatically.
 
 ### Phase 8 verification and manual review
 
@@ -219,18 +221,57 @@ To verify manually:
 2. Check **Practice Mistakes** shows its message. Try **View Statistics**, **Change Settings**, and **Return Home**; use browser Back to confirm the finished results remain available.
 3. Select **Practice Again**. Confirm the same operations/difficulty/length, zero totals, Question 1, and a card with no selected answer. Complete it normally to produce another summary.
 4. Start continuous practice and end immediately: summary totals and accuracy should all be zero. Repeat with one right and one wrong result: expect 2 attempted and 50% accuracy. Canceling the end confirmation should keep practicing.
-5. Refresh the summary or open it directly in a fresh page. Check the helpful missing-session message and setup/home links.
+5. Refresh the summary: its results should remain. In a browser with no saved completed session, check the helpful missing-session message and setup/home links.
 6. Check mobile widths and keyboard navigation. Summary actions stack on smaller screens, and focus moves to the summary heading after navigation.
+
+## Persistence, statistics, and settings (Phases 9–11)
+
+`AppDataProvider` owns the saved snapshot. The existing session hook notifies it only from explicit transitions: starting, accepting an answer, ending, or retrying. A synchronous ref merges consecutive updates without stale React state. Attempt IDs and question IDs are deduplicated on both save and load. Aggregate and per-session totals are rebuilt from accepted attempt records, using self-reported correctness, so statistics and summaries share one source of truth. The cached statistics in storage are never trusted when loading.
+
+### Storage and retention
+
+- The single `mathPractice.data` JSON key atomically stores schema version 1, settings, session metadata, attempts, and derived statistics. This follows the specification's versioning requirement while avoiding partial writes across its suggested separate keys.
+- Missing-version/version-0 snapshots have an explicit migration entry point. Unknown versions remain untouched and show a warning rather than being overwritten by this version of the app.
+- Invalid JSON falls back to fresh data. Invalid sections/rows are repaired or discarded independently; valid attempts are retained. Loaded attempts reuse arithmetic/difficulty validation, validate selected answers, IDs, dates, and self-reports, and are deduplicated.
+- The newest 500 session metadata records are retained; the statistics page displays the newest 20. All attempts remain available for lifetime totals, including attempts whose older session metadata has been pruned. No attempt history is silently discarded to make space.
+- Missing/unavailable storage and quota/write failures do not crash practice. New results remain in React state with a friendly warning that unsaved changes may be lost. Successful later writes retry the current snapshot.
+- Accepted answers persist even in unfinished sessions. The current unfinished card/selection/flip state is not restored; active-session recovery belongs to a later phase. The latest completed session can be restored for its summary.
+- Data belongs to this browser profile and origin. Clearing browser data erases it. Concurrent editing in multiple tabs is not synchronized; use one practice tab at a time.
+
+### Statistics and resets
+
+The Statistics page shows overall, operation, and difficulty totals/accuracy, plus dated recent sessions with their configuration and performance. Zero attempts yields 0%, using the same one-decimal accuracy helper as summaries. Unfinished sessions are labeled. Empty states guide new users to setup. No mistake statistics or tracking have been introduced.
+
+**Reset Statistics** requires a native browser confirmation and clears sessions, attempts, derived totals, and the current in-memory session. Saved settings remain. **Clear All Application Data** requires a stronger confirmation, clears all `mathPractice.*` keys (including future/legacy mistake data), restores defaults, and returns home. Neither action deletes unrelated localStorage keys. If browser permissions prevent deletion, a visible warning explains the failure.
+
+### Settings
+
+Save Settings persists animation and default operations/difficulty/length. At least one default operation is required. Defaults start with Addition, Beginner, 10 questions, and animations enabled. Existing setup selectors are reused; session overrides never overwrite saved defaults. Changing defaults invalidates remembered setup choices without resetting an active session. The session's animation checkbox updates this same preference immediately, preserving the current card and reduced-motion behavior. Sound/explanation controls are disabled with descriptions explaining their unavailability. Mastery configuration remains deferred.
+
+### Verification and manual review
+
+Automated tests cover serialization, migrations, repair, unsupported schemas, deduplication, blocked/full storage, history retention, provider reloads, statistics grouping/accuracy (including thousands of attempts), summary consistency, settings/default overrides, animation application, and cancellation/confirmation of both resets. The previous setup tests now expect the valid application defaults while preserving validation and keyboard coverage.
+
+Chrome verification completed a fixed session (5 attempted / 3 correct / 2 incorrect / 60%), checked matching summary/statistics, refreshed, and fully closed/reopened Chrome using the same profile. Results remained correct without duplicates. It also verified a continuous session, saved defaults, animation toggling, both reset actions with cancel/confirm, settings retention after Reset Statistics, defaults after Clear All, and preservation of unrelated keys. Statistics/settings layouts had no horizontal overflow at 1280, 768, 375, and 320 pixels; desktop/mobile screenshots were inspected. No runtime or console errors appeared. Cross-browser and actual screen-reader checks remain for later testing.
+
+To verify manually:
+
+1. Run `npm run dev`. Complete five questions, marking three right and two wrong. Compare the summary (60%) with Statistics, including the operation/difficulty cards and recent session.
+2. Refresh, then close/reopen the same browser profile and URL. Check saved results and the completed summary remain.
+3. Save new defaults in Settings and disable animations. Open setup, confirm those defaults, override them for one session, and check saved defaults stay unchanged. Flip a card with animation disabled; also try the session animation checkbox.
+4. Cancel Reset Statistics and check nothing changed. Confirm it and check attempts, sessions, and totals are cleared while preferences remain, including after refresh.
+5. Cancel Clear All Application Data and check nothing changed. Confirm it and check navigation home, empty statistics, default preferences, and no completed summary after refresh.
+6. Test keyboard controls, native dialogs, reduced motion, and mobile widths. Sound and explanations should clearly say they are unavailable.
 
 ## Structure
 
 ```text
 src/
-  app/          Routes, configuration/session providers, and navigation tests
+  app/          Routes, saved-data/configuration/session providers, and navigation tests
   components/   Layout, selectors, cards, session content/progress, preview, and tests
   hooks/        Session state/transition hook and tests
-  pages/        Home, setup/session/summary pages and tests, other placeholders, and fallback
-  services/     Generators, distractors, rules, session transitions, and unit tests
+  pages/        Home, setup/session/summary, statistics, settings, their tests, and fallback
+  services/     Generators, rules, session transitions, storage, statistics, and unit tests
   styles/       Global, setup, card, session/progress, and responsive summary styles
   test/         Shared test setup and DOM cleanup
   types/        Shared question, attempt/session, mistake, statistics, and settings models
@@ -238,7 +279,7 @@ src/
   main.tsx      React entry point and BrowserRouter
 ```
 
-Shared models follow specification sections 8 and 10. Settings fields represent the preferences in section 6.7; they define data only and do not implement settings behavior. Session lengths retain the specification’s `number | "continuous"` type; the setup form limits choices to 5, 10, 20, or continuous. Session configuration is validated at session creation; persisted-data validation belongs to later phases. Add feature modules and storage helpers when their phases require them. The repository root contains Vite, TypeScript, and lint configuration, the npm lockfile, and project documentation.
+Shared models follow specification sections 8 and 10. Settings follow section 6.7 and are validated before persistence; unavailable sound/explanation options are disabled and labeled. Session lengths retain the specification’s `number | "continuous"` type; the setup form limits choices to 5, 10, 20, or continuous. Session configuration is validated at session creation; persisted-data validation belongs to `storageService.ts`. Add feature modules and storage helpers when their phases require them. The repository root contains Vite, TypeScript, and lint configuration, the npm lockfile, and project documentation.
 
 Prettier excludes the authoritative `specification.md` and `TODO.md` so routine formatting preserves those reference documents. ESLint and Prettier run separately; `eslint-config-prettier` disables conflicting style rules.
 

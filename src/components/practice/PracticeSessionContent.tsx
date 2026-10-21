@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { Link } from 'react-router'
 import { useSession } from '../../app/practiceSessionContext'
 import type { PracticeSessionState } from '../../types/session'
-import type { AppSettings } from '../../types/settings'
+import { useAppData } from '../../app/appDataContext'
 import {
   difficultyOptions,
   operationOptions,
@@ -18,8 +18,11 @@ export default function PracticeSessionContent({
   state: PracticeSessionState
 }) {
   const { recordResult, endSession, retryQuestion } = useSession()
-  const [animationEnabled, setAnimationEnabled] =
-    useState<AppSettings['cardAnimationEnabled']>(true)
+  const {
+    data: { settings },
+    saveSettings,
+  } = useAppData()
+  const animationEnabled = settings.cardAnimationEnabled
   const heading = useRef<HTMLHeadingElement>(null)
   const { session, question, isActive } = state
   useEffect(() => {
@@ -28,7 +31,7 @@ export default function PracticeSessionContent({
   function requestEnd() {
     if (
       window.confirm(
-        'End this practice session? Your completed answers will remain visible until you start a new session or refresh.',
+        'End this practice session? Your completed answers will be saved in your practice history.',
       )
     )
       endSession()
@@ -84,7 +87,12 @@ export default function PracticeSessionContent({
             <input
               type="checkbox"
               checked={animationEnabled}
-              onChange={(event) => setAnimationEnabled(event.target.checked)}
+              onChange={(event) =>
+                saveSettings({
+                  ...settings,
+                  cardAnimationEnabled: event.target.checked,
+                })
+              }
             />{' '}
             Show card animation
           </label>

@@ -121,7 +121,12 @@ async function start(
   user: ReturnType<typeof userEvent.setup>,
   continuous = false,
 ) {
-  await user.click(screen.getByRole('checkbox', { name: 'Addition (+)' }))
+  if (
+    !(
+      screen.getByRole('checkbox', { name: 'Addition (+)' }) as HTMLInputElement
+    ).checked
+  )
+    await user.click(screen.getByRole('checkbox', { name: 'Addition (+)' }))
   await user.click(screen.getByRole('radio', { name: 'Beginner' }))
   await user.click(
     screen.getByRole('radio', {

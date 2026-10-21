@@ -12,12 +12,16 @@ import {
 } from '../services/practiceSession'
 
 /** Compute transitions in event handlers, outside render/reducer updater functions. */
-export default function usePracticeSession() {
-  const [state, setState] = useState<PracticeSessionState | null>(null)
-  const current = useRef<PracticeSessionState | null>(null)
+export default function usePracticeSession(
+  initialState: PracticeSessionState | null = null,
+  onChange?: (state: PracticeSessionState) => void,
+) {
+  const [state, setState] = useState<PracticeSessionState | null>(initialState)
+  const current = useRef<PracticeSessionState | null>(initialState)
   function commit(next: PracticeSessionState) {
     current.current = next
     setState(next)
+    onChange?.(next)
   }
   function startSession(configuration: PracticeConfiguration) {
     if (!isPracticeConfiguration(configuration)) return false

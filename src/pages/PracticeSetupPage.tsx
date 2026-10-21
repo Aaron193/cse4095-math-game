@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
+import { useAppData } from '../app/appDataContext'
 import { useSession } from '../app/practiceSessionContext'
 import { usePracticeConfiguration } from '../app/practiceConfigurationContext'
 import DifficultySelector from '../components/practice/DifficultySelector'
@@ -13,16 +14,19 @@ import '../styles/practice-setup.css'
 
 export default function PracticeSetupPage() {
   const { configuration, setConfiguration } = usePracticeConfiguration()
+  const {
+    data: { settings },
+  } = useAppData()
   const navigate = useNavigate()
   const { startSession } = useSession()
   const [operations, setOperations] = useState<MathOperation[]>(
-    configuration?.operations ?? [],
+    configuration?.operations ?? settings.defaultOperations,
   )
   const [difficulty, setDifficulty] = useState<DifficultyLevel | null>(
-    configuration?.difficulty ?? null,
+    configuration?.difficulty ?? settings.defaultDifficulty,
   )
   const [sessionLength, setSessionLength] = useState<SessionLength>(
-    configuration?.sessionLength ?? 10,
+    configuration?.sessionLength ?? settings.defaultSessionLength,
   )
   const feedback = [
     operations.length === 0 ? 'Choose at least one operation.' : '',

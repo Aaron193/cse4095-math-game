@@ -125,13 +125,6 @@ describe('application routes', () => {
       expect(
         screen.getByRole('heading', { level: 1, name: heading }),
       ).toBeInTheDocument()
-      if (
-        path !== '/practice/setup' &&
-        path !== '/practice/session' &&
-        path !== '/practice/summary'
-      ) {
-        expect(screen.getByText('Coming soon')).toBeInTheDocument()
-      }
       await user.click(
         screen.getByRole('link', {
           name: path === '/practice/summary' ? 'Return Home' : 'Back to home',

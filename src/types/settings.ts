@@ -1,7 +1,7 @@
 import type { DifficultyLevel, MathOperation } from './question'
 import type { SessionLength } from './session'
 
-/** Preferences from specification section 6.7; defaults are added in a later phase. */
+/** Preferences from specification section 6.7; persisted and validated by storageService. */
 export interface AppSettings {
   soundEnabled: boolean
   cardAnimationEnabled: boolean

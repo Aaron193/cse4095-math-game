@@ -48,7 +48,12 @@ async function start(
   user: ReturnType<typeof userEvent.setup>,
   continuous = false,
 ) {
-  await user.click(screen.getByRole('checkbox', { name: 'Addition (+)' }))
+  if (
+    !(
+      screen.getByRole('checkbox', { name: 'Addition (+)' }) as HTMLInputElement
+    ).checked
+  )
+    await user.click(screen.getByRole('checkbox', { name: 'Addition (+)' }))
   await user.click(screen.getByRole('radio', { name: 'Beginner' }))
   await user.click(
     screen.getByRole('radio', {
@@ -153,7 +158,7 @@ describe('functional practice session page', () => {
     ).toBeInTheDocument()
     expect(total('Attempted')).toHaveTextContent('5')
     expect(generator.generateMultipleChoiceQuestion).toHaveBeenCalledTimes(5)
-    expect(storage).not.toHaveBeenCalled()
+    expect(storage).toHaveBeenCalled() // Completed attempts now persist in Phase 9.
   })
 
   it('retains an active session across route navigation and only starts fresh on an explicit setup submission', async () => {

@@ -29,7 +29,12 @@ const difficultyNames = ['Beginner', 'Easy', 'Intermediate', 'Advanced']
 async function selectBasicConfiguration(
   user: ReturnType<typeof userEvent.setup>,
 ) {
-  await user.click(screen.getByRole('checkbox', { name: 'Addition (+)' }))
+  if (
+    !(
+      screen.getByRole('checkbox', { name: 'Addition (+)' }) as HTMLInputElement
+    ).checked
+  )
+    await user.click(screen.getByRole('checkbox', { name: 'Addition (+)' }))
   await user.click(screen.getByRole('radio', { name: 'Beginner' }))
 }
 
@@ -38,18 +43,20 @@ describe('practice configuration controls', () => {
     renderSetup()
     expect(screen.getAllByRole('checkbox')).toHaveLength(4)
     for (const name of operationNames)
-      expect(screen.getByRole('checkbox', { name })).not.toBeChecked()
+      expect(
+        (screen.getByRole('checkbox', { name }) as HTMLInputElement).checked,
+      ).toBe(name === 'Addition (+)')
     for (const name of difficultyNames) {
-      expect(screen.getByRole('radio', { name })).not.toBeChecked()
+      expect(
+        (screen.getByRole('radio', { name }) as HTMLInputElement).checked,
+      ).toBe(name === 'Beginner')
       expect(screen.getByRole('radio', { name })).toHaveAccessibleDescription()
     }
     expect(screen.getByRole('radio', { name: '10 questions' })).toBeChecked()
-    expect(screen.getByRole('button', { name: 'Start Session' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Start Session' })).toBeEnabled()
     expect(
       within(screen.getByRole('main')).getByRole('status'),
-    ).toHaveTextContent(
-      'Choose at least one operation. Choose one difficulty level.',
-    )
+    ).toHaveTextContent('Ready when you are!')
   })
 
   it('allows multiple operations and independent deselection', async () => {
@@ -57,7 +64,6 @@ describe('practice configuration controls', () => {
     renderSetup()
     const addition = screen.getByRole('checkbox', { name: 'Addition (+)' })
     const division = screen.getByRole('checkbox', { name: 'Division (÷)' })
-    await user.click(addition)
     await user.click(division)
     expect(addition).toBeChecked()
     expect(division).toBeChecked()
@@ -118,6 +124,8 @@ describe('practice configuration controls', () => {
     const addition = screen.getByRole('checkbox', { name: 'Addition (+)' })
     addition.focus()
     await user.keyboard(' ')
+    expect(addition).not.toBeChecked()
+    await user.keyboard(' ')
     expect(addition).toBeChecked()
     await user.tab()
     expect(
@@ -141,6 +149,7 @@ describe('configuration validation and handoff', () => {
   it('requires an operation even after a difficulty is selected', async () => {
     const user = userEvent.setup()
     renderSetup()
+    await user.click(screen.getByRole('checkbox', { name: 'Addition (+)' }))
     await user.click(screen.getByRole('radio', { name: 'Easy' }))
     expect(screen.getByRole('button', { name: 'Start Session' })).toBeDisabled()
     expect(
@@ -148,14 +157,14 @@ describe('configuration validation and handoff', () => {
     ).toHaveTextContent('Choose at least one operation.')
   })
 
-  it('requires a difficulty even after an operation is selected', async () => {
+  it('starts with exactly one valid default difficulty, which can be changed', async () => {
     const user = userEvent.setup()
     renderSetup()
-    await user.click(screen.getByRole('checkbox', { name: 'Addition (+)' }))
-    expect(screen.getByRole('button', { name: 'Start Session' })).toBeDisabled()
-    expect(
-      within(screen.getByRole('main')).getByRole('status'),
-    ).toHaveTextContent('Choose one difficulty level.')
+    expect(screen.getByRole('radio', { name: 'Beginner' })).toBeChecked()
+    await user.click(screen.getByRole('radio', { name: 'Easy' }))
+    expect(screen.getByRole('radio', { name: 'Beginner' })).not.toBeChecked()
+    expect(screen.getByRole('radio', { name: 'Easy' })).toBeChecked()
+    expect(screen.getByRole('button', { name: 'Start Session' })).toBeEnabled()
   })
 
   it('enables valid submission and disables it again when the last operation is cleared', async () => {
@@ -172,6 +181,7 @@ describe('configuration validation and handoff', () => {
 
   it('guards invalid submission even if a submit event bypasses the disabled button', () => {
     renderSetup()
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Addition (+)' }))
     fireEvent.submit(
       screen.getByRole('form', { name: 'Practice configuration' }),
     )
@@ -190,6 +200,7 @@ describe('configuration validation and handoff', () => {
     async (length) => {
       const user = userEvent.setup()
       renderSetup()
+      await user.click(screen.getByRole('checkbox', { name: 'Addition (+)' }))
       await user.click(
         screen.getByRole('checkbox', { name: 'Subtraction (−)' }),
       )

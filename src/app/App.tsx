@@ -1,17 +1,21 @@
 import { Route, Routes } from 'react-router'
 import AppLayout from '../components/AppLayout'
+import StatisticsPage from '../pages/StatisticsPage'
 import HomePage from '../pages/HomePage'
 import NotFoundPage from '../pages/NotFoundPage'
-import PlaceholderPage from '../pages/PlaceholderPage'
+import SettingsPage from '../pages/SettingsPage'
 import PracticeSetupPage from '../pages/PracticeSetupPage'
 import PracticeSessionPage from '../pages/PracticeSessionPage'
 import SessionSummaryPage from '../pages/SessionSummaryPage'
+import AppDataProvider from './AppDataProvider'
+import { useAppData } from './appDataContext'
 import PracticeConfigurationProvider from './PracticeConfigurationProvider'
 import PracticeSessionProvider from './PracticeSessionProvider'
 
-export default function App() {
+function ApplicationRoutes() {
+  const { resetKey } = useAppData()
   return (
-    <PracticeConfigurationProvider>
+    <PracticeConfigurationProvider key={resetKey}>
       <PracticeSessionProvider>
         <Routes>
           <Route element={<AppLayout />}>
@@ -19,28 +23,20 @@ export default function App() {
             <Route path="practice/setup" element={<PracticeSetupPage />} />
             <Route path="practice/session" element={<PracticeSessionPage />} />
             <Route path="practice/summary" element={<SessionSummaryPage />} />
-            <Route
-              path="statistics"
-              element={
-                <PlaceholderPage
-                  title="Statistics"
-                  description="Your practice progress and achievements will appear here."
-                />
-              }
-            />
-            <Route
-              path="settings"
-              element={
-                <PlaceholderPage
-                  title="Settings"
-                  description="Soon you’ll be able to choose your favorite practice settings here."
-                />
-              }
-            />
+            <Route path="statistics" element={<StatisticsPage />} />
+            <Route path="settings" element={<SettingsPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>
       </PracticeSessionProvider>
     </PracticeConfigurationProvider>
+  )
+}
+
+export default function App() {
+  return (
+    <AppDataProvider>
+      <ApplicationRoutes />
+    </AppDataProvider>
   )
 }
