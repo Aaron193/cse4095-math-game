@@ -1,4 +1,8 @@
-import type { DifficultyLevel, MathOperation } from '../types/question'
+import type {
+  ArithmeticQuestion,
+  DifficultyLevel,
+  MathOperation,
+} from '../types/question'
 
 export const operations: readonly MathOperation[] = [
   'addition',
@@ -68,4 +72,22 @@ const difficultyRules = {
 export function getDifficultyRules(difficulty: DifficultyLevel) {
   assertDifficulty(difficulty)
   return difficultyRules[difficulty]
+}
+
+/** Inclusive answer-choice ceiling, derived from the existing arithmetic limits. */
+export function getAnswerChoiceMax(question: ArithmeticQuestion): number {
+  const rules = getDifficultyRules(question.difficulty)
+  switch (question.operation) {
+    case 'addition':
+      return 2 * rules.additiveMax
+    case 'subtraction':
+      return rules.additiveMax
+    case 'multiplication':
+      return rules.firstFactorMax * rules.secondFactorMax
+    case 'division':
+      return Math.min(
+        rules.quotientMax,
+        Math.floor(rules.dividendMax / question.secondOperand),
+      )
+  }
 }

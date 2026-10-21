@@ -1,12 +1,13 @@
-import type { ArithmeticQuestion } from '../types/question'
+import type { ArithmeticQuestion, Question } from '../types/question'
 import {
   assertDifficulty,
   getDifficultyRules,
+  getAnswerChoiceMax,
   isMathOperation,
   operationSymbols,
 } from '../services/questionRules'
 
-/** Arithmetic-only validation. Choice validation belongs to Phase 5. */
+/** Arithmetic-only validation, also used before adding multiple-choice answers. */
 export function validateArithmeticQuestion(
   value: unknown,
   existingIds?: ReadonlySet<string>,
@@ -92,4 +93,32 @@ export function validateArithmeticQuestion(
   }
   if (correctAnswer !== expected)
     throw new Error('Question answer is mathematically incorrect')
+}
+
+/** Validate the complete multiple-choice question, including all arithmetic rules. */
+export function validateQuestion(
+  value: unknown,
+  existingIds?: ReadonlySet<string>,
+): asserts value is Question {
+  validateArithmeticQuestion(value, existingIds)
+  const choices = (value as Partial<Question>).choices
+  if (!Array.isArray(choices) || choices.length !== 4)
+    throw new TypeError('Question must have exactly four answer choices')
+  const max = getAnswerChoiceMax(value)
+  // for...of visits sparse array holes too, so missing choices cannot bypass validation.
+  for (const choice of choices) {
+    if (
+      typeof choice !== 'number' ||
+      !Number.isSafeInteger(choice) ||
+      choice < 0 ||
+      choice > max
+    )
+      throw new RangeError(
+        'Answer choices must be nonnegative whole numbers within the difficulty range',
+      )
+  }
+  if (new Set(choices).size !== 4)
+    throw new Error('Answer choices must be unique')
+  if (choices.filter((choice) => choice === value.correctAnswer).length !== 1)
+    throw new Error('Correct answer must appear exactly once')
 }

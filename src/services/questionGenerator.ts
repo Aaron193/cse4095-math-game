@@ -2,6 +2,7 @@ import type {
   ArithmeticQuestion,
   DifficultyLevel,
   MathOperation,
+  Question,
 } from '../types/question'
 import { randomInteger } from '../utils/math'
 import type { RandomSource } from '../utils/math'
@@ -13,6 +14,7 @@ import {
   generateDivisionQuestion,
 } from './arithmeticGenerators'
 import { assertDifficulty, isMathOperation } from './questionRules'
+import { withAnswerChoices } from './answerChoices'
 
 const generators = {
   addition: generateAdditionQuestion,
@@ -61,5 +63,21 @@ export function generateQuestion(
     return question
   } catch (cause) {
     throw new Error('Unable to generate a valid arithmetic question', { cause })
+  }
+}
+
+/** Future practice sessions can request complete questions through this API. */
+export function generateMultipleChoiceQuestion(
+  operation: MathOperation | readonly MathOperation[],
+  difficulty: DifficultyLevel,
+  random: RandomSource = Math.random,
+): Question {
+  const arithmetic = generateQuestion(operation, difficulty, random)
+  try {
+    return withAnswerChoices(arithmetic, random)
+  } catch (cause) {
+    throw new Error('Unable to generate a valid multiple-choice question', {
+      cause,
+    })
   }
 }

@@ -4,7 +4,7 @@ A university software development project for children ages 7–12 to practice a
 
 ## Current status
 
-Phases 1–4 are complete: shared layout/navigation, a home page, practice configuration, six routes, shared types, and development tooling. Practice Setup provides operation, difficulty, and length selectors with accessible validation. Start Session opens a placeholder displaying the selected choices. Session Summary, Statistics, and Settings remain placeholders. Background arithmetic generation is implemented and tested. Answer choices, flashcards, session progress, persistence, statistics calculations, and settings behavior are not implemented. The Practice Session page still displays only the selected configuration.
+Phases 1–5 are complete: shared layout/navigation, a home page, practice configuration, six routes, shared types, and development tooling. Practice Setup provides operation, difficulty, and length selectors with accessible validation. Start Session opens a placeholder displaying the selected choices. Session Summary, Statistics, and Settings remain placeholders. Background arithmetic and multiple-choice generation are implemented and tested. Flashcards, session progress, persistence, statistics calculations, and settings behavior are not implemented. The Practice Session page still displays only the selected configuration.
 
 ## Technology
 
@@ -34,11 +34,11 @@ npm run build         # Type-check and produce dist/
 npm run preview       # Serve the production build locally
 ```
 
-Phase 4 verification: `npm test` passed all 178 tests in 7 files, including all 37 earlier setup/navigation tests; `npm run typecheck`, `npm run lint` (zero warnings), `npm run format:check`, and `npm run build` passed.
+Phase 5 verification: `npm test` passed all 249 tests in 10 files: 71 new Phase 5 tests and all 178 earlier tests; `npm run typecheck`, `npm run lint` (zero warnings), `npm run format:check`, and `npm run build` passed.
 
 Tests cover all selectors, repeated Select All, multiple operation choices, exclusive difficulty/length choices, the 10-question default, native keyboard interactions, invalid submission, configuration handoff for each length, returning to setup, missing configuration, and existing navigation. The former setup-placeholder assertion now checks the functional setup page.
 
-During Phase 3, Chrome verification passed at 1280, 768, 375, and 320 pixels wide, with no horizontal overflow and choice targets at least 48 pixels high. Desktop/mobile screenshots were visually inspected. Browser checks covered validation, Select All, radio exclusivity, configuration transfer without reloading, return-to-setup choices, Tab/Space/arrow keys, Enter submission, visible focus, and the safe state after refresh. No runtime or console errors were reported. No new browser checks were needed for Phase 4 because the interface was unchanged. Other browsers and screen readers have not been tested.
+During Phase 3, Chrome verification passed at 1280, 768, 375, and 320 pixels wide, with no horizontal overflow and choice targets at least 48 pixels high. Desktop/mobile screenshots were visually inspected. Browser checks covered validation, Select All, radio exclusivity, configuration transfer without reloading, return-to-setup choices, Tab/Space/arrow keys, Enter submission, visible focus, and the safe state after refresh. No runtime or console errors were reported. No new browser checks were performed for Phases 4–5 because the interface was unchanged; existing component/navigation tests still pass. Other browsers and screen readers have not been tested.
 
 ### Practice configuration design
 
@@ -69,7 +69,7 @@ const addition = generateQuestion('addition', 1)
 const mixed = generateQuestion(['addition', 'division'], 3)
 ```
 
-`generateQuestion` returns `ArithmeticQuestion = Omit<Question, 'choices'>`. The complete `Question` interface is unchanged; no fake choices are created. In Phase 5, distractor generation and shuffling will extend this arithmetic data with real `choices`, returning a full `Question`, and add choice validation. The shuffle utility is tested now but does not generate choices.
+`generateQuestion` still returns `ArithmeticQuestion = Omit<Question, 'choices'>`. The existing arithmetic API and tests remain unchanged. The Phase 5 `generateMultipleChoiceQuestion` API completes this data with real choices and returns the existing `Question` interface.
 
 The four operation-specific functions in `arithmeticGenerators.ts` also accept a difficulty level. Generators, random integers, shuffling, and operation selection accept an optional random-source function for reproducible tests; production defaults to `Math.random`. Mixed selection samples distinct chosen operations uniformly without mutating the input.
 
@@ -90,7 +90,7 @@ Subtraction sorts the operands to prevent negative results at every level. Divis
 
 ### Validation, IDs, and errors
 
-`validateArithmeticQuestion(value, existingIds?)` checks supported operations/levels, nonnegative safe-integer operands, exact arithmetic, difficulty ranges, whole-number division, matching question text, nonempty IDs, and basic source metadata. A supplied `ReadonlySet` detects duplicate IDs without mutating the set. Callers managing a question history can add each accepted ID themselves. Answer-choice validation is intentionally deferred to Phase 5.
+`validateArithmeticQuestion(value, existingIds?)` checks supported operations/levels, nonnegative safe-integer operands, exact arithmetic, difficulty ranges, whole-number division, matching question text, nonempty IDs, and basic source metadata. A supplied `ReadonlySet` detects duplicate IDs without mutating the set. Callers managing a question history can add each accepted ID themselves. The Phase 5 `validateQuestion` validator also checks the completed answer choices, as described below.
 
 `createQuestionId` uses `crypto.randomUUID()` for UUIDs across page reloads; HTTPS or localhost is required. It throws a descriptive error if secure UUID generation is unavailable. Invalid ranges, random samples, operations, difficulties, and empty selections throw explicit errors. The unified generator validates its output before returning it and wraps unexpected failures in an error retaining the original `cause`; retry/fallback behavior is deferred to the later error-handling phase.
 
@@ -100,6 +100,47 @@ Tests include 4,000 seeded generated questions covering all 16 operation/difficu
 
 Examples produced in deterministic tests: `58 + 67 = 125`, `52 − 27 = 25`, `8 × 7 = 56`, and `144 ÷ 1 = 144`.
 
+## Multiple-choice generation (Phase 5)
+
+```ts
+import { generateMultipleChoiceQuestion } from './src/services/questionGenerator'
+import { withAnswerChoices } from './src/services/answerChoices'
+
+const question = generateMultipleChoiceQuestion('multiplication', 2)
+const mixed = generateMultipleChoiceQuestion(['addition', 'division'], 3)
+// Existing arithmetic generators remain usable:
+const completed = withAnswerChoices(addition)
+```
+
+Here `addition` is the arithmetic question from the earlier example. `withAnswerChoices` returns a new complete question, preserving its ID, operands, difficulty, source, and optional mistake-pattern metadata. It does not modify the input. The Practice Session placeholder continues to display configuration only; these services are not connected to a question-card interface yet.
+
+### Distractor strategies and termination
+
+`generateDistractors` returns three unique incorrect numbers. Addition uses nearby sums and missed-carry errors; subtraction uses nearby differences and missed-borrow errors; multiplication uses neighboring multiplication facts, an addition-instead-of-multiplication error, and nearby products. Division uses related facts from neighboring divisors and nearby quotients, discarding fractional values.
+
+All candidates are filtered to exclude the correct answer, duplicates, negatives, unsafe/noninteger numbers, and values above the operation/difficulty answer ceiling. Those ceilings reuse `questionRules.ts`: twice the operand maximum for addition, the operand maximum for subtraction, the maximum factor product for multiplication, and the permitted quotient maximum for division (also constrained by its divisor and dividend cap).
+
+Candidate sampling stops after `MAX_DISTRACTOR_ATTEMPTS` (24 draws). If fewer than three distinct distractors are available from those draws, a deterministic fallback checks the three nearest distances below/above the answer. The existing answer domains always contain at least four possible integers, so this bounded fallback supplies enough alternatives even for zero or the maximum answer. Invalid random samples still throw rather than silently masking an invalid random source.
+
+### Shuffling and complete validation
+
+The correct answer and three distractors are passed to the existing Fisher–Yates `shuffleArray` utility. With the normal random source, the correct answer has no fixed position; tests deliberately exercise all four positions without relying on chance. A particular shuffle is allowed to leave its initial ordering unchanged.
+
+`validateQuestion(value, existingIds?)` first applies all arithmetic validation and then requires exactly four unique, nonnegative safe integers within the choice ceiling, with the correct answer present exactly once. Missing values, sparse arrays, fractional choices, duplicates, and invalid arithmetic are rejected. The completed question is validated before being returned. The new generator retains unexpected choice-generation failures as the error `cause`; invalid data is never returned as a successful question.
+
+### Verified examples and tests
+
+These complete examples are produced by deterministic tests. Production order and distractors vary.
+
+| Question   | Choices        | Correct answer |
+| ---------- | -------------- | -------------- |
+| 7 + 8 = ?  | 5, 14, 16, 15  | 15             |
+| 15 − 7 = ? | 18, 7, 9, 8    | 8              |
+| 8 × 7 = ?  | 48, 55, 57, 56 | 56             |
+| 56 ÷ 7 = ? | 7, 9, 6, 8     | 8              |
+
+The new tests cover operation-specific mistakes, zeros/ones and maximum answers, repeated/unusable random draws, bounded fallback, immutable completion, every correct-answer position, malformed choices, arithmetic/difficulty preservation, error handling, and compatibility with every existing generator. Repeated checks generate 4,000 seeded complete questions across all 16 operation/difficulty combinations and 200 mixed questions with default randomness. Assertions check invariants rather than expecting a rare random arrangement to appear.
+
 ## Structure
 
 ```text
@@ -107,7 +148,7 @@ src/
   app/          Routes, configuration Context/provider, and navigation tests
   components/   Shared layout and reusable practice selectors/options
   pages/        Home, practice setup/tests, session preview, other placeholders, and fallback
-  services/     Arithmetic generators, difficulty rules, unified API, and unit tests
+  services/     Arithmetic/choice generators, distractors, rules, APIs, and unit tests
   styles/       Global CSS and practice setup styles
   test/         Shared test setup and DOM cleanup
   types/        Shared question, attempt/session, mistake, statistics, and settings models
