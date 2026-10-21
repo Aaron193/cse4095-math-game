@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
+import { useSession } from '../app/practiceSessionContext'
 import { usePracticeConfiguration } from '../app/practiceConfigurationContext'
 import DifficultySelector from '../components/practice/DifficultySelector'
 import OperationSelector from '../components/practice/OperationSelector'
@@ -13,6 +14,7 @@ import '../styles/practice-setup.css'
 export default function PracticeSetupPage() {
   const { configuration, setConfiguration } = usePracticeConfiguration()
   const navigate = useNavigate()
+  const { startSession } = useSession()
   const [operations, setOperations] = useState<MathOperation[]>(
     configuration?.operations ?? [],
   )
@@ -39,6 +41,7 @@ export default function PracticeSetupPage() {
       difficulty,
       sessionLength,
     }
+    if (!startSession(nextConfiguration)) return
     setConfiguration(nextConfiguration)
     navigate('/practice/session')
   }

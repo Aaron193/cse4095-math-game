@@ -1,4 +1,9 @@
-import type { DifficultyLevel, MathOperation, QuestionSource } from './question'
+import type {
+  DifficultyLevel,
+  MathOperation,
+  Question,
+  QuestionSource,
+} from './question'
 
 export type SessionLength = number | 'continuous'
 
@@ -36,3 +41,13 @@ export type PracticeConfiguration = Pick<
   PracticeSession,
   'operations' | 'difficulty' | 'sessionLength'
 >
+
+/** Runtime session data held only in React state until the persistence phase. */
+export interface PracticeSessionState {
+  session: PracticeSession
+  currentQuestionIndex: number
+  question: Question | null
+  attempts: PracticeAttempt[]
+  isActive: boolean
+  error: string | null
+}

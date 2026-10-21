@@ -235,11 +235,11 @@ describe('configuration validation and handoff', () => {
     expect(screen.getByRole('button', { name: 'Start Session' })).toBeEnabled()
   })
 
-  it('shows a helpful setup link when the session route has no configuration', async () => {
-    const user = userEvent.setup()
+  it('redirects to setup when the session route has no session', async () => {
     renderSetup('/practice/session')
-    expect(screen.getByText(/No practice choices yet/)).toBeInTheDocument()
-    await user.click(screen.getByRole('link', { name: 'Go to Practice Setup' }))
+    expect(screen.getByLabelText('Current route')).toHaveTextContent(
+      '/practice/setup',
+    )
     expect(
       screen.getByRole('heading', { name: 'Practice Setup' }),
     ).toBeInTheDocument()

@@ -59,7 +59,7 @@ const homeActions = [
 
 const pageRoutes = [
   ['/practice/setup', 'Practice Setup'],
-  ['/practice/session', 'Practice Session'],
+  ['/practice/session', 'Practice Setup'],
   ['/practice/summary', 'Session Summary'],
   ['/statistics', 'Statistics'],
   ['/settings', 'Settings'],
@@ -121,7 +121,7 @@ describe('application routes', () => {
       expect(
         screen.getByRole('heading', { level: 1, name: heading }),
       ).toBeInTheDocument()
-      if (path !== '/practice/setup') {
+      if (path !== '/practice/setup' && path !== '/practice/session') {
         expect(screen.getByText('Coming soon')).toBeInTheDocument()
       }
       await user.click(screen.getByRole('link', { name: 'Back to home' }))
