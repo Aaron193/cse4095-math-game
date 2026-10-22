@@ -92,7 +92,7 @@ describe('versioned local storage', () => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...data, version }))
       expect(readStorage().data).toEqual(data)
       writeStorage(readStorage().data)
-      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).version).toBe(2)
+      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).version).toBe(3)
     },
   )
   it('preserves unsupported schema data until an explicit clear', () => {

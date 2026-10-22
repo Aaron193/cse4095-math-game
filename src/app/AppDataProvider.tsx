@@ -19,6 +19,7 @@ export default function AppDataProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState(initial.data)
   const current = useRef(data)
   const writable = useRef(initial.writable)
+  const [canSave, setCanSave] = useState(initial.writable)
   const [warning, setWarning] = useState(initial.warning)
   const [resetKey, setResetKey] = useState(0)
   const [defaultsKey, setDefaultsKey] = useState(0)
@@ -48,6 +49,7 @@ export default function AppDataProvider({ children }: { children: ReactNode }) {
   function clearAll() {
     const error = clearApplicationStorage()
     writable.current = !error
+    setCanSave(!error)
     const next = emptyData()
     current.current = next
     setData(next)
@@ -63,6 +65,10 @@ export default function AppDataProvider({ children }: { children: ReactNode }) {
         }),
         data,
         warning,
+        canSave,
+        retrySaving: () => {
+          if (writable.current) setWarning(writeStorage(current.current))
+        },
         resetKey,
         defaultsKey,
         saveSession: record,

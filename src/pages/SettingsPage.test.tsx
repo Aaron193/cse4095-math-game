@@ -1,6 +1,7 @@
+import TestRouter from '../test/TestRouter'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, useNavigate } from 'react-router'
+import { useNavigate } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from '../app/App'
 import {
@@ -22,10 +23,10 @@ function ReturnToSession() {
 }
 function open(path = '/settings') {
   return render(
-    <MemoryRouter initialEntries={[path]}>
+    <TestRouter initialEntries={[path]}>
       <App />
       <ReturnToSession />
-    </MemoryRouter>,
+    </TestRouter>,
   )
 }
 afterEach(() => vi.restoreAllMocks())
@@ -123,6 +124,7 @@ describe('persistent application settings', () => {
       screen.getByRole('navigation', { name: 'Main navigation' }),
     )
     await user.click(nav.getByRole('link', { name: 'Settings' }))
+    await user.click(screen.getByRole('button', { name: 'Save and Leave' }))
     await user.click(screen.getByRole('radio', { name: 'Advanced' }))
     await user.click(screen.getByRole('checkbox', { name: 'Card animations' }))
     await user.click(screen.getByRole('button', { name: 'Save Settings' }))
@@ -141,6 +143,7 @@ describe('persistent application settings', () => {
     await user.click(
       screen.getByRole('link', { name: 'Change practice choices' }),
     )
+    await user.click(screen.getByRole('button', { name: 'Save and Leave' }))
     expect(screen.getByRole('radio', { name: 'Advanced' })).toBeChecked()
   })
   it('session animation toggle persists without replacing the session or recording an attempt', async () => {

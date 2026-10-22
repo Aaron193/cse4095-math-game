@@ -1,4 +1,5 @@
 import { Route, Routes } from 'react-router'
+import SessionNavigationSafety from '../components/SessionNavigationSafety'
 import AppLayout from '../components/AppLayout'
 import StatisticsPage from '../pages/StatisticsPage'
 import HomePage from '../pages/HomePage'
@@ -17,6 +18,7 @@ function ApplicationRoutes() {
   return (
     <PracticeConfigurationProvider key={resetKey}>
       <PracticeSessionProvider>
+        <SessionNavigationSafety />
         <Routes>
           <Route element={<AppLayout />}>
             <Route index element={<HomePage />} />

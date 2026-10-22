@@ -8,6 +8,8 @@ export interface AppDataContextValue {
   getReviewHistory: () => ReviewHistory
   data: StoredData
   warning: string | null
+  canSave: boolean
+  retrySaving: () => void
   resetKey: number
   defaultsKey: number
   saveSession: (state: PracticeSessionState) => void

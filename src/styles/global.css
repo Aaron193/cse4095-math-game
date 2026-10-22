@@ -210,3 +210,98 @@ footer {
     scroll-behavior: auto !important;
   }
 }
+
+h1:focus {
+  outline: 3px solid #713eb5;
+  outline-offset: 4px;
+  border-radius: 0.25rem;
+}
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid #713eb5;
+  outline-offset: 3px;
+}
+
+/* Allow text and controls to reflow with narrow widths and larger fonts. */
+.welcome,
+.header-content,
+.button {
+  min-width: 0;
+}
+.button {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+h2,
+h3,
+h4,
+dd,
+.app-title {
+  overflow-wrap: anywhere;
+}
+.home-note {
+  padding: 1rem;
+  border-radius: 1rem;
+  background: #f1f7ff;
+}
+@media (max-width: 30rem) {
+  .header-content nav {
+    width: 100%;
+  }
+  .navigation-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
+  }
+  .navigation-list a {
+    width: 100%;
+    justify-content: center;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    text-align: center;
+  }
+  main {
+    padding: clamp(0.75rem, 4vw, 1rem);
+  }
+  .welcome {
+    padding: clamp(0.75rem, 4vw, 1.5rem);
+  }
+  h1 {
+    font-size: clamp(1.75rem, 8vw, 2.5rem);
+  }
+  .welcome {
+    border-radius: 1rem;
+  }
+}
+
+dialog {
+  width: min(90vw, 36rem);
+  max-height: 85dvh;
+  overflow-y: auto;
+  padding: 1.5rem;
+  color: #23334d;
+  border: 3px solid #234cb5;
+  border-radius: 1rem;
+}
+dialog::backdrop {
+  background: #23334d99;
+}
+.resume-notice {
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  border: 2px solid #b7c9ef;
+  background: #fff;
+  border-radius: 1rem;
+}
+
+.error-notice {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background: #fff1c9;
+  border: 2px solid #bc8c24;
+  color: #694500;
+  border-radius: 1rem;
+}
+.error-notice > p:first-child {
+  margin-top: 0;
+}

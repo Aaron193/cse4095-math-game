@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router'
+import { Link, useNavigate, useSearchParams, useLocation } from 'react-router'
 import { useAppData } from '../app/appDataContext'
 import { useSession } from '../app/practiceSessionContext'
 import { usePracticeConfiguration } from '../app/practiceConfigurationContext'
@@ -20,6 +20,7 @@ export default function PracticeSetupPage() {
     data: { settings, mistakePatterns },
   } = useAppData()
   const [search] = useSearchParams()
+  const { state: navigationState } = useLocation()
   const activePatterns = mistakePatterns.filter((pattern) => !pattern.mastered)
   const initialMode =
     search.get('mode') === 'mistake-review'
@@ -28,7 +29,7 @@ export default function PracticeSetupPage() {
   const [mode, setMode] = useState<PracticeMode>(initialMode)
   const [navigateError, setNavigateError] = useState('')
   const navigate = useNavigate()
-  const { startSession } = useSession()
+  const { startSession, state, startError } = useSession()
   const [operations, setOperations] = useState<MathOperation[]>(
     initialMode === 'mistake-review'
       ? operationOptions.map((op) => op.value)
@@ -70,6 +71,13 @@ export default function PracticeSetupPage() {
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!isValid || difficulty === null) return
+    if (
+      state?.isActive &&
+      !window.confirm(
+        'Start a new session? Your current unfinished card will be replaced. Completed answers stay in your history.',
+      )
+    )
+      return
     const nextConfiguration: PracticeConfiguration = {
       operations,
       difficulty,
@@ -94,6 +102,12 @@ export default function PracticeSetupPage() {
         Choose your math adventure. Pick your operations, a difficulty, and how
         long you’d like to practice.
       </p>
+      {navigationState?.missingSession === true && (
+        <p className="configuration-feedback">
+          There’s no unfinished session to continue. Choose your practice
+          settings to get started.
+        </p>
+      )}
       <form
         onSubmit={handleSubmit}
         aria-label="Practice configuration"
@@ -150,7 +164,8 @@ export default function PracticeSetupPage() {
           id="configuration-feedback"
           role="status"
         >
-          {navigateError ||
+          {startError ||
+            navigateError ||
             (isValid ? 'Ready when you are!' : feedback.join(' '))}
         </p>
         <div className="setup-actions">

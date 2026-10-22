@@ -8,6 +8,8 @@ import {
   operationOptions,
   sessionLengthOptions,
 } from './practiceOptions'
+import { spokenQuestion } from '../../utils/questionAccessibility'
+import ErrorNotice from '../ErrorNotice'
 import QuestionCard from './QuestionCard'
 import SessionProgress from './SessionProgress'
 import '../../styles/practice-session.css'
@@ -17,7 +19,8 @@ export default function PracticeSessionContent({
 }: {
   state: PracticeSessionState
 }) {
-  const { recordResult, endSession, retryQuestion } = useSession()
+  const { recordResult, endSession, retryQuestion, updateCardState } =
+    useSession()
   const {
     data: { settings },
     saveSettings,
@@ -79,11 +82,16 @@ export default function PracticeSessionContent({
       </h2>
       <p className="sr-only" role="status">
         {isActive
-          ? `Question ${state.currentQuestionIndex + 1}.`
+          ? `Question ${state.currentQuestionIndex + 1}${session.sessionLength === 'continuous' ? '' : ` of ${session.sessionLength}`}. ${question ? spokenQuestion(question) : 'Loading a question.'}`
           : 'Practice finished.'}{' '}
         {session.attempted} attempted, {session.correct} correct,{' '}
         {session.incorrect} incorrect.
       </p>
+      {(settings.feedbackEnabled ?? true) && (
+        <p className="practice-feedback" role="status">
+          {state.feedback ?? 'Take your time. Every practice step counts!'}
+        </p>
+      )}
       {isActive ? (
         <>
           <label className="animation-toggle">
@@ -100,12 +108,15 @@ export default function PracticeSessionContent({
             Show card animation
           </label>
           {state.error && (
-            <div role="alert">
-              <p>{state.error}</p>
-              <button className="button" type="button" onClick={retryQuestion}>
-                Try loading a question again
-              </button>
-            </div>
+            <ErrorNotice
+              message={state.error}
+              onRetry={retryQuestion}
+              retryLabel="Try loading a question again"
+            >
+              <Link className="button button-secondary" to="/">
+                Return home
+              </Link>
+            </ErrorNotice>
           )}
           {question && (
             <div
@@ -115,6 +126,8 @@ export default function PracticeSessionContent({
             >
               <QuestionCard
                 question={question}
+                initialState={state.cardState}
+                onInteractionChange={updateCardState}
                 questionNumber={state.currentQuestionIndex + 1}
                 totalQuestions={session.sessionLength}
                 animationEnabled={animationEnabled}
@@ -124,7 +137,7 @@ export default function PracticeSessionContent({
               />
             </div>
           )}
-          {(session.sessionLength === 'continuous' || state.error) && (
+          {isActive && (
             <button
               className="button button-secondary end-session"
               type="button"

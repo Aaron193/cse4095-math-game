@@ -1,14 +1,14 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router'
+import TestRouter from '../test/TestRouter'
 import { describe, expect, it } from 'vitest'
 import App from './App'
 
 function renderApp(path = '/') {
   return render(
-    <MemoryRouter initialEntries={[path]}>
+    <TestRouter initialEntries={[path]}>
       <App />
-    </MemoryRouter>,
+    </TestRouter>,
   )
 }
 

@@ -49,6 +49,16 @@ export default function SettingsPage() {
             <label className="choice">
               <input
                 type="checkbox"
+                checked={draft.feedbackEnabled ?? true}
+                onChange={(event) =>
+                  update({ feedbackEnabled: event.target.checked })
+                }
+              />
+              Encouraging feedback
+            </label>
+            <label className="choice">
+              <input
+                type="checkbox"
                 checked={draft.cardAnimationEnabled}
                 onChange={(event) =>
                   update({ cardAnimationEnabled: event.target.checked })

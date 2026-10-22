@@ -4,7 +4,7 @@ A university software development project for children ages 7–12 to practice a
 
 ## Current status
 
-Phases 1–15 are complete: shared navigation, configurable practice, validated multiple-choice questions, interactive cards, fixed/continuous sessions, summaries, persistent history, statistics, and application settings. Results are self-reported. Browser localStorage preserves attempts, session metadata, mistake patterns, statistics, and preferences. Mistake tracking, related-question review, mastery, and mistake statistics are implemented. Phase 16 has not begun. Sound and step-by-step explanations are visibly unavailable; card animations work and can be disabled.
+Phases 1–19 are complete: shared navigation, configurable practice, validated multiple-choice questions, interactive cards, fixed/continuous sessions, summaries, persistent history, statistics, and application settings. Results are self-reported. Browser localStorage preserves attempts, session metadata, the active card/selection/flip state, mistake patterns, statistics, and preferences. Mistake tracking, related-question review, mastery, and mistake statistics are implemented. Keyboard accessibility, responsive refinements, active-session recovery, navigation safety, and friendly error recovery are implemented. Phases 20–22 have not begun. Sound and step-by-step explanations are visibly unavailable; card animations work and can be disabled.
 
 ## Technology
 
@@ -34,6 +34,8 @@ npm run build         # Type-check and produce dist/
 npm run preview       # Serve the production build locally
 ```
 
+Current verification (Phases 16–19): 479 tests in 35 files pass, along with TypeScript, ESLint (zero warnings), formatting, and the production build. Chrome/audit coverage and remaining limitations are described below.
+
 Phases 9–11 verification: all 369 tests in 22 files passed, along with TypeScript, ESLint (zero warnings), formatting, and the production build. Each phase was checked before the next began; Chrome persistence and reset checks are described below.
 
 Phase 8 verification: `npm test` passed all 322 tests in 17 files, including 27 new summary/calculation tests; `npm run typecheck`, `npm run lint` (zero warnings), `npm run format:check`, and `npm run build` passed.
@@ -46,9 +48,9 @@ During Phase 3, Chrome verification passed at 1280, 768, 375, and 320 pixels wid
 
 Each reusable selector is a controlled component using native checkboxes or radio buttons, grouped by fieldsets and legends. Descriptions follow specification section 7. Selections are visible through the native checkmark/radio indicator as well as color. Feedback is announced through a status region and describes why Start Session is disabled.
 
-The setup page keeps draft choices in React state. The initial defaults are Addition, Beginner, and 10 questions; saved defaults replace these on later visits. Submitting valid choices stores a `PracticeConfiguration` in a small React Context and navigates to `/practice/session`. This type uses `Pick<PracticeSession, 'operations' | 'difficulty' | 'sessionLength'>`, reusing the existing model instead of duplicating its fields. Submitting setup now also explicitly starts a session. Its separate Context stores a snapshot of those choices; returning to setup restores the last submitted choices unless application defaults have since changed.
+The setup page keeps draft choices in React state. The initial defaults are Addition, Beginner, and 10 questions; saved defaults replace these on later visits. Submitting valid choices stores a `PracticeConfiguration` in a small React Context and navigates to `/practice/session`. This type uses `Pick<PracticeSession, 'operations' | 'difficulty' | 'sessionLength' | 'mode'>`, reusing the existing model instead of duplicating its fields. Submitting setup now also explicitly starts a session. Its separate Context stores a snapshot of those choices; returning to setup restores the last submitted choices unless application defaults have since changed.
 
-Per-session overrides and unsaved drafts remain in memory. Saved default choices persist and initialize setup after reload. Starting a session generates its first question. Active-card recovery is still deferred; completed attempts are saved immediately, and the most recent completed summary can be restored after reload.
+Per-session overrides and unsaved drafts remain in memory. Saved default choices persist and initialize setup after reload. Starting a session generates its first question. The active card, selected answer, and flipped face now restore after reload, with totals rebuilt from canonical attempts. When no active checkpoint exists, the most recent completed summary can be restored.
 
 ### Manual interface check
 
@@ -57,7 +59,7 @@ Per-session overrides and unsaved drafts remain in memory. Saved default choices
 3. Clear the last operation: Start Session becomes disabled and feedback explains why. Select an operation: it becomes enabled again.
 4. Select multiple operations, then try **Select All**. Toggle individual operations. Try every difficulty and length; each radio group should have at most one selection.
 5. Pick operations, difficulty, and length, then select **Start Session**. The session page should display those exact choices, zero totals, a generated card, and fixed progress when applicable. Use **Change practice choices** to return and confirm they are restored.
-6. Refresh: completed answers remain in statistics. The unfinished card is not resumed; the session route shows a restored completed summary when one exists, otherwise setup.
+6. Refresh: completed answers remain in statistics. The unfinished card and selected/flipped state resume exactly; completed sessions show their summary instead.
 7. Use Tab/Space for checkboxes, arrow keys for radio options, and Enter on Start Session. Check the visible focus indicators.
 8. Resize to desktop, tablet, and mobile widths, including 320 pixels. Choices should stack on small screens without horizontal scrolling.
 9. Check Home, Statistics, Settings, browser Back/Forward, and the unknown-route fallback still work.
@@ -94,7 +96,7 @@ Subtraction sorts the operands to prevent negative results at every level. Divis
 
 `validateArithmeticQuestion(value, existingIds?)` checks supported operations/levels, nonnegative safe-integer operands, exact arithmetic, difficulty ranges, whole-number division, matching question text, nonempty IDs, and basic source metadata. A supplied `ReadonlySet` detects duplicate IDs without mutating the set. Callers managing a question history can add each accepted ID themselves. The Phase 5 `validateQuestion` validator also checks the completed answer choices, as described below.
 
-`createQuestionId` uses `crypto.randomUUID()` for UUIDs across page reloads; HTTPS or localhost is required. It throws a descriptive error if secure UUID generation is unavailable. Invalid ranges, random samples, operations, difficulties, and empty selections throw explicit errors. The unified generator validates its output before returning it and wraps unexpected failures in an error retaining the original `cause`; retry/fallback behavior is deferred to the later error-handling phase.
+`createQuestionId` uses `crypto.randomUUID()` for UUIDs across page reloads; HTTPS or localhost is required. It throws a descriptive error if secure UUID generation is unavailable. Invalid ranges, random samples, operations, difficulties, and empty selections throw explicit errors. The unified generator validates its output before returning it and wraps unexpected failures in an error retaining the original `cause`; session-level bounded retry/fallback behavior is now implemented in Phase 19.
 
 ### Generation verification
 
@@ -147,7 +149,7 @@ The new tests cover operation-specific mistakes, zeros/ones and maximum answers,
 
 `AnswerChoice`, `CardFront`, and `CardBack` are small presentation components. `QuestionCard` owns selection and flip state, accepts a completed `Question`, displays question number/length (including continuous mode), and calls `onResult(selfReportedCorrect, selectedAnswer)` at most once. A synchronous ref guard plus disabled buttons prevents both responses or repeated clicks from invoking it twice. A new question ID remounts the interaction to reset selection, flip state, and callback lock; rerendering the same question preserves them.
 
-The two faces share a CSS grid area and use a 550ms 3D rotation with hidden back faces. Native answer buttons show a selected marker and `aria-pressed`. The inactive face is `aria-hidden`, inert, and disabled. Flip remains disabled until an answer is selected. Revealing locks the answer, focuses the reveal heading, and announces both answers. Tab, Space, and Enter use native behavior; number-key shortcuts belong to a later accessibility phase.
+The two faces share a CSS grid area and use a 550ms 3D rotation with hidden back faces. Native answer buttons show a selected marker and `aria-pressed`. The inactive face is `aria-hidden`, inert, and disabled. Flip remains disabled until an answer is selected. Revealing locks the answer, focuses the reveal heading, and announces both answers. Tab, Space, and Enter use native behavior; keys 1–4 select answer choices while avoiding form inputs, editing controls, modifiers, held keys, and flipped cards.
 
 **Show card animation** uses the persisted `AppSettings.cardAnimationEnabled` preference. Disabling it or requesting reduced motion removes motion without preventing answer reveal. The standalone Phase 6 `QuestionCardPreview` and its tests remain available for isolated component verification; the application route now uses the functional session flow below.
 
@@ -157,7 +159,7 @@ The two faces share a CSS grid area and use a 550ms 3D rotation with hidden back
 
 `PracticeSessionProvider` owns the `usePracticeSession` hook above the routes, retaining the current session across client navigation. The typed state reuses `PracticeSession`, `PracticeAttempt`, `Question`, and `PracticeConfiguration`, adding the current question index, active flag, current question, attempts, and a recoverable loading error. Accepted attempts and session metadata are now written through `AppDataProvider` to localStorage. No data is sent to a server.
 
-Only a valid **Start Session** submission creates a session, UUID, start timestamp, copied configuration, and first question. Rendering, navigating back, toggling animation, or returning to a completed session cannot implicitly start another one. Submitting setup again intentionally replaces the previous session. Refreshing/reopening preserves accepted answers and session history. The current unfinished card is not recovered; completed summaries can be restored without generating questions.
+Only a valid **Start Session** submission creates a session, UUID, start timestamp, copied configuration, and first question. Rendering, navigating back, toggling animation, or returning to a completed session cannot implicitly start another one. Submitting setup again intentionally replaces the previous session after confirmation when it is still unfinished. Refreshing/reopening preserves accepted answers and session history. The unfinished card restores without generating a replacement question. Completed summaries restore as inactive sessions.
 
 ### Attempts and progression
 
@@ -189,7 +191,7 @@ Chrome completed a real five-question session with three right and two wrong sel
 4. Complete five questions, reporting three right and two wrong. Confirm navigation to **Session Summary**, totals of **5 attempted / 3 correct / 2 incorrect**, **60% accuracy**, and no new card. Repeat with 10 or 20 questions if desired.
 5. Use **Return Home** and browser Back to return to the summary. Confirm it stays completed. Use setup and **Start Session** to intentionally start a fresh session.
 6. Start continuous practice. Complete a few questions, select **End Session**, and cancel: the session should continue unchanged. End again and confirm: only completed questions should appear in the totals.
-7. Test keyboard controls, animation on/off, reduced motion, and mobile widths. Refreshing keeps accepted answers and preferences in storage, but does not recover the current unfinished card.
+7. Test keyboard controls, animation on/off, reduced motion, and mobile widths. Refreshing keeps accepted answers, preferences, and the current card/selection/flip state.
 
 ## Session summary (Phase 8)
 
@@ -230,12 +232,12 @@ To verify manually:
 
 ### Storage and retention
 
-- The single `mathPractice.data` JSON key atomically stores schema version 2, settings, session metadata, attempts, derived mistake patterns, and statistics. This follows the specification's versioning requirement while avoiding partial writes across its suggested separate keys.
-- Missing-version/version-0/version-1 snapshots migrate to version 2, backfilling mistake patterns from existing history. The migrated snapshot is written on the next explicit save. Unknown versions remain untouched and show a warning rather than being overwritten by this version of the app.
+- The single `mathPractice.data` JSON key atomically stores schema version 3, settings, session metadata, an active-card checkpoint, attempts, derived mistake patterns, and statistics. This follows the specification's versioning requirement while avoiding partial writes across its suggested separate keys.
+- Missing-version/version-0/version-1/version-2 snapshots migrate to version 3, backfilling mistake patterns and adding an empty checkpoint when older history has none. The migrated snapshot is written on the next explicit save. Unknown versions remain untouched and show a warning rather than being overwritten by this version of the app.
 - Invalid JSON falls back to fresh data. Invalid sections/rows are repaired or discarded independently; valid attempts are retained. Loaded attempts reuse arithmetic/difficulty validation, validate selected answers, IDs, dates, and self-reports, and are deduplicated.
 - The newest 500 session metadata records are retained; the statistics page displays the newest 20. All attempts remain available for lifetime totals, including attempts whose older session metadata has been pruned. No attempt history is silently discarded to make space.
 - Missing/unavailable storage and quota/write failures do not crash practice. New results remain in React state with a friendly warning that unsaved changes may be lost. Successful later writes retry the current snapshot.
-- Accepted answers persist even in unfinished sessions. The current unfinished card/selection/flip state is not restored; active-session recovery belongs to a later phase. The latest completed session can be restored for its summary.
+- Accepted answers persist even in unfinished sessions. The current unfinished card, selection, and flip state restore from the same saved snapshot; malformed card data offers a retry without deleting valid attempts. The latest completed session can be restored for its summary.
 - Data belongs to this browser profile and origin. Clearing browser data erases it. Concurrent editing in multiple tabs is not synchronized; use one practice tab at a time.
 
 ### Statistics and resets
@@ -299,7 +301,7 @@ All existing lengths, progress, ending confirmation, duplicate guards, summary c
 
 Each phase was verified before proceeding: Phase 12 passed 381 tests, Phase 13 passed 405, and Phase 14 passed 424, together with TypeScript, ESLint, formatting, and production builds. Final verification passed 434 tests in 28 files and those same checks. Generation tests include 1,600 seeded similar questions across all operation/difficulty combinations, explicit inverse/reversal cases, zero/maximum boundaries, and repeat/failure behavior. Further tests cover migrations, damaged caches, duplicate saves, mastery/reset/reactivation, priority, all fixed lengths, continuous practice, real-card review flows, summary counts, reloads, ranking ties, filtering, and reset consistency.
 
-An older statistics test counted every `time` element on the page; mistake dates correctly increased that count. Its assertion now targets only Recent sessions. A reused-review-ID regression test also verifies that a generation error preserves the accepted attempt for retry rather than displaying an unanswerable duplicate card.
+An older statistics test counted every `time` element on the page; mistake dates correctly increased that count. Its assertion now targets only Recent sessions. A reused-review-ID regression test now verifies automatic recovery while preserving the accepted attempt rather than displaying an unanswerable duplicate card.
 
 Chrome completed regular practice with a missed question, followed the summary action into review, mastered the pattern after three linked answers, and verified matching summary/statistics (4 attempted, 3 correct, 1 incorrect, 75%). Refresh and a full Chrome close/reopen preserved mastery and disabled the empty queue. A controlled random stream generated the original fact again through the regular generator; missing it reactivated the same pattern with no duplicate. A continuous review miss updated the parent once, cancel/confirm ending preserved exact counts, and history reset erased mistake progress too. Desktop/mobile screenshots were inspected; layouts fit 1280, 768, 375, and 320 pixels with no horizontal overflow or runtime/console errors. Other browsers and actual screen-reader checks remain outside this cycle.
 
@@ -314,6 +316,50 @@ To verify manually:
 
 Files introduced: `mistakeService.ts`, `similarQuestionGenerator.ts`, `reviewService.ts`, and `mistakeStatistics.ts` with unit tests; `MistakeStatistics.tsx`; `MistakeReview.test.tsx`, `MistakeStatistics.test.tsx`, and the shared `mistakeData.ts` fixture. Existing session types/engine/hook/providers, storage/schema tests, setup, session content, summary/actions, statistics, responsive styles, README, and TODO were extended. No dependencies, specification changes, commits, pushes, or Phase 16 work were introduced.
 
+## Usability and reliability (Phases 16–19)
+
+### Accessibility and responsive practice
+
+The existing native controls, visible focus outlines, inert hidden card faces, reduced-motion CSS, and reveal focus/live region are reused. Answer buttons now show their 1–4 shortcuts and expose `aria-keyshortcuts`. Shortcuts ignore form/editing controls and modifier/repeated keys and cannot change a flipped answer. Questions have spoken operator labels (for example, “8 multiplied by 7 equals what?”), and the live session announcement includes the new question, number/length, and totals. Ordinary page navigation focuses the page heading; session/reveal/summary keep their existing focus behavior. Practice navigation remains marked current throughout practice routes.
+
+The mobile navigation uses font-aware columns that stack as text grows. Controls, headings, values, and buttons reflow; tablet cards remain centered, and statistics continue using responsive cards. Answer buttons and selectors have stronger boundaries for non-text contrast. The home page no longer calls working activities “coming soon.” Positive/supportive text feedback is chosen only after an accepted result, without extra animations or sound, and can be disabled with the saved **Encouraging feedback** preference. Feedback falls back to a fixed message if randomness fails so it can never block recording an answer.
+
+### Recovery and navigation
+
+Schema version 3 adds an `activeSession` checkpoint containing session ID, the complete current question (including its original choice order and review parent), and `QuestionCardState` (selected answer and flipped state). Session metadata and attempts remain canonical; the checkpoint does not duplicate their counters or history. Event handlers save answer selection, flipping, accepted results, and the next card synchronously in one localStorage snapshot. Restoration does not generate questions, report results, or run random generation during render. Zero-valued answers are valid selections.
+
+Loaded checkpoints are checked against session configuration, question validation, prior question IDs, and active review parents. A damaged selection resets only selection; a damaged/already-recorded question keeps its session and valid attempts with a retry action. Attempted totals/index are rebuilt from canonical attempts. Exhausted fixed sessions are repaired as completed even if their completion timestamp is missing. Ending or completing clears the checkpoint, preventing completed sessions from restarting. An unfinished session is offered through **Continue Practice** when returning elsewhere in the app.
+
+React Router's public `useBlocker` API needs a data router, so `main.tsx` now uses `createBrowserRouter`/`RouterProvider` around the existing route tree. Application integration tests use an equivalent `createMemoryRouter` helper. Routes/components were not rewritten. A native modal dialog protects in-app navigation, including browser Back/Forward, with **Keep Practicing**, **Save and Leave**, or **End Session and Leave**. The last option ends after the requested destination commits, avoiding a race with the summary redirect. Native modal behavior is supplemented with explicit first/last-button Tab wrapping; Escape keeps practicing. Refresh/close uses the browser's generic `beforeunload` warning, which browsers may suppress without prior interaction. Intentionally ending/completing removes that warning. Starting a replacement session also requires confirmation.
+
+### Error handling
+
+Each question load retries generation at most three times. Existing immediate-repeat avoidance is separately bounded at eight draws. A deterministic backup path then uses existing arithmetic/choice utilities, or validated related candidates for review, retaining difficulty/source/parent rules and fresh IDs. The fallback does not silently replace review with unrelated regular practice. If both paths fail, completed results remain and a reusable `ErrorNotice` offers retry, home, and intentional ending. Manual retry starts another bounded operation; there is no automatic infinite retry. Failed session/attempt ID creation also receives a useful recovery message, without counting an unrecorded answer.
+
+Stored preferences are repaired field by field, preserving valid choices when one preference is invalid. Invalid attempt/session rows are filtered, totals/patterns are rebuilt, malformed cards are repaired independently, and unrelated storage keys remain untouched. **Try saving again** retries the current in-memory snapshot after a storage failure. Unknown schema versions remain protected from overwrites. Missing session URLs explain how to start practice. The browser router has a friendly error boundary with reload/home actions instead of a technical stack trace; development-only console diagnostics retain details for debugging.
+
+### Verification, issues fixed, and limits
+
+Phases were checked sequentially: Phase 16 passed 440 tests; Phase 17 passed 442; Phase 18 passed 451; final verification passes 479 tests across 35 files. Each phase passed TypeScript, ESLint, formatting, and production builds before moving on. New coverage includes shortcut isolation, keyboard card completion, feedback preferences, active checkpoints, selected/flipped restoration, duplicate guards, canonical completion repair, Back/stay/save/end confirmations, bounded failures/fallbacks at all 16 operation/difficulty combinations, partial preference repair, save retry, failed starts/attempts, and the friendly route boundary. Earlier navigation tests now explicitly choose Save and Leave; generation tests distinguish transient automatic recovery from failure of both normal and backup paths.
+
+Chrome verified full keyboard-only sessions, desktop/tablet portrait/tablet landscape/mobile layouts (including 320px), large touch targets, all main pages, native modal focus wrapping/Escape, reduced motion with animation enabled/disabled, actual 200% browser zoom, and actual 32px default browser fonts in an isolated profile. Refresh and fully closing/reopening Chrome retained the exact question, selection, flip state, and review parent without duplicate attempts. Ending cleared recovery. Injected corrupt JSON/rows/preferences/cards, failed randomness, and unavailable IDs recovered with valid history intact and useful actions.
+
+Axe-core was installed only under `/tmp` for browser auditing; it is not a project dependency. Audited home/setup/session-front/session-back/summary/statistics/settings/error-message/navigation-dialog states reported no WCAG-tagged violations. The 3D card front and modal sometimes produced an incomplete automated contrast check. Manual color calculations supplement this: primary text pairs are at least 5.71:1, focus indicators at least 6.37:1, and strengthened control boundaries at least 3.62:1 against their adjacent backgrounds. Automated audits do not establish full WCAG conformance. Actual screen-reader output, other browser engines, physical touch hardware, and operating-system font settings have not been tested; browser font/zoom and device emulation were used.
+
+Behavior issues were caught and fixed: ending during blocked navigation could let the automatic summary redirect override the chosen destination, and native modal Tab navigation could move focus into browser chrome after the final button. Navigation-commit ordering and explicit Tab boundaries now have regression checks. Visual inspection also caught overlapping mobile navigation labels with 32px browser fonts; adaptive columns and rendered-text overlap assertions now cover that case. One browser harness needed the proper Escape virtual-key code, and a browser-run approval review timed out once; retrying the verification in smaller steps succeeded. Neither remains a product limitation.
+
+Storage must be available and have capacity to preserve the latest snapshot. When it is not, practice remains usable in memory with a warning, and saving can be retried. Multiple-tab editing is still not synchronized. Sound/explanations remain explicitly unavailable. No tasks in Phases 20–22 were marked complete or begun.
+
+To verify manually:
+
+1. Run `npm run dev`. Start five questions, press 1–4 to choose, Tab to Flip Card, Enter to reveal, then Tab/Space to self-report. Check focus and question/progress announcements; try a screen reader if available.
+2. Select an answer and refresh before flipping; then flip and refresh again. Check the exact card, answer order, selection, and face restore. Report once and check one attempt is added. Close/reopen the browser profile and continue through **Continue Practice**.
+3. Navigate Home/Statistics or use Back while practicing. Try Keep Practicing, Save and Leave/resume, and End Session and Leave. Confirm completion/end causes no extra navigation warning. Try replacing an unfinished session from setup.
+4. Disable animations and feedback in Settings. Also enable reduced motion in browser tools or the OS. Confirm cards remain usable. Check desktop/mobile, 200% zoom, and larger browser font preferences.
+5. Review statistics and reset actions. In a disposable profile, try damaged localStorage data or blocked writes; check friendly messages, working retries, and preservation of valid history. Clear All remains an explicit confirmed action.
+
+Files added: `RouteFocus.tsx`, `questionAccessibility.ts`, keyboard tests, `feedback.ts` and tests, feedback page tests, `SessionNavigationSafety.tsx`, `TestRouter.tsx`, recovery service/page tests, `ErrorNotice.tsx`, `ApplicationErrorPage.tsx`, `questionRecovery.ts` and tests, `developmentErrors.ts`, and error-handling page tests. Existing card/session/hook/provider/storage/types, setup/summary/settings/home, navigation/layout/router entry, styles, integration fixtures, README, and TODO were extended. No runtime or project testing dependencies were added; no commit or push was performed.
+
 ## Structure
 
 ```text
@@ -327,7 +373,7 @@ src/
   test/         Shared test setup and DOM cleanup
   types/        Shared question, attempt/session, mistake, statistics, and settings models
   utils/        Random integers, shuffling, IDs, validation, session accuracy, and unit tests
-  main.tsx      React entry point and BrowserRouter
+  main.tsx      React entry point, browser data router, and friendly route boundary
 ```
 
 Shared models follow specification sections 8 and 10. Settings follow section 6.7 and are validated before persistence; unavailable sound/explanation options are disabled and labeled. Session lengths retain the specification’s `number | "continuous"` type; the setup form limits choices to 5, 10, 20, or continuous. Session configuration is validated at session creation; persisted-data validation belongs to `storageService.ts`. Add feature modules and storage helpers when their phases require them. The repository root contains Vite, TypeScript, and lint configuration, the npm lockfile, and project documentation.
@@ -338,7 +384,7 @@ Prettier excludes the authoritative `specification.md` and `TODO.md` so routine 
 
 See [specification.md](specification.md) for requirements and [TODO.md](TODO.md) for the phased plan. Each phase includes explanation, focused implementation, appropriate tests, checks, documentation, a suggested commit, and a pause for the next instruction. Keep prompts, debugging decisions, test output, and milestone commits as evidence for the final 2–3 page development report. Do not commit private information in interaction records.
 
-Deployment is a later phase. The production output is static files in `dist/`. A host using BrowserRouter must rewrite application URLs to `index.html` for direct links and refreshes. No deployment or GitHub push has been performed during setup.
+Deployment is a later phase. The production output is static files in `dist/`. A host using browser-history routing must rewrite application URLs to `index.html` for direct links and refreshes. No deployment or GitHub push has been performed during setup.
 
 ## Official references
 

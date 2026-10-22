@@ -654,35 +654,35 @@ Initial routes:
 
 ### 66. Improve Keyboard Navigation
 
-- [ ] Ensure every control is reachable with Tab.
-- [ ] Add visible focus indicators.
-- [ ] Support Enter and Space on buttons.
-- [ ] Support number keys 1–4 for answer selection.
-- [ ] Prevent keyboard shortcuts from interfering with form inputs.
+- [x] Ensure every control is reachable with Tab.
+- [x] Add visible focus indicators.
+- [x] Support Enter and Space on buttons.
+- [x] Support number keys 1–4 for answer selection.
+- [x] Prevent keyboard shortcuts from interfering with form inputs.
 
 ### 67. Improve Screen-Reader Support
 
-- [ ] Use semantic HTML.
-- [ ] Add accessible labels to answer choices.
-- [ ] Announce question changes.
-- [ ] Announce the revealed correct answer.
-- [ ] Announce session progress.
-- [ ] Add accessible names to icon buttons.
+- [x] Use semantic HTML.
+- [x] Add accessible labels to answer choices.
+- [x] Announce question changes.
+- [x] Announce the revealed correct answer.
+- [x] Announce session progress.
+- [x] Add accessible names to icon buttons.
 
 ### 68. Support Reduced Motion
 
-- [ ] Detect `prefers-reduced-motion`.
-- [ ] Disable card animations when reduced motion is requested.
-- [ ] Ensure card content still changes clearly.
-- [ ] Respect the application's animation setting.
+- [x] Detect `prefers-reduced-motion`.
+- [x] Disable card animations when reduced motion is requested.
+- [x] Ensure card content still changes clearly.
+- [x] Respect the application's animation setting.
 
 ### 69. Check Visual Accessibility
 
-- [ ] Verify sufficient color contrast.
-- [ ] Avoid communicating results by color alone.
-- [ ] Add text or icons to selected states.
-- [ ] Test at 200% browser zoom.
-- [ ] Test with larger system font sizes.
+- [x] Verify sufficient color contrast.
+- [x] Avoid communicating results by color alone.
+- [x] Add text or icons to selected states.
+- [x] Test at 200% browser zoom.
+- [x] Test with larger system font sizes.
 
 ---
 
@@ -690,33 +690,33 @@ Initial routes:
 
 ### 70. Optimize for Tablets
 
-- [ ] Use large touch targets.
-- [ ] Center the practice card.
-- [ ] Keep answer choices easy to reach.
-- [ ] Test portrait and landscape orientations.
+- [x] Use large touch targets.
+- [x] Center the practice card.
+- [x] Keep answer choices easy to reach.
+- [x] Test portrait and landscape orientations.
 
 ### 71. Optimize for Mobile Devices
 
-- [ ] Stack answer choices when necessary.
-- [ ] Adjust card width.
-- [ ] Prevent horizontal scrolling.
-- [ ] Simplify navigation.
-- [ ] Test on common small-screen sizes.
+- [x] Stack answer choices when necessary.
+- [x] Adjust card width.
+- [x] Prevent horizontal scrolling.
+- [x] Simplify navigation.
+- [x] Test on common small-screen sizes.
 
 ### 72. Optimize the Statistics Layout
 
-- [ ] Convert wide tables to cards on small screens.
-- [ ] Prevent labels and values from overlapping.
-- [ ] Keep recent sessions readable.
-- [ ] Support horizontal scrolling only when necessary.
+- [x] Convert wide tables to cards on small screens.
+- [x] Prevent labels and values from overlapping.
+- [x] Keep recent sessions readable.
+- [x] Support horizontal scrolling only when necessary.
 
 ### 73. Add Child-Friendly Feedback
 
-- [ ] Add positive feedback messages.
-- [ ] Add supportive messages after mistakes.
-- [ ] Avoid shaming language.
-- [ ] Randomize feedback without becoming distracting.
-- [ ] Add an option to disable feedback effects.
+- [x] Add positive feedback messages.
+- [x] Add supportive messages after mistakes.
+- [x] Avoid shaming language.
+- [x] Randomize feedback without becoming distracting.
+- [x] Add an option to disable feedback effects.
 
 ---
 
@@ -724,19 +724,19 @@ Initial routes:
 
 ### 74. Persist an Active Session
 
-- [ ] Save the active session.
-- [ ] Save the current question.
-- [ ] Save the selected answer when appropriate.
-- [ ] Restore the session after a page refresh.
-- [ ] Clear restored state when the session ends.
+- [x] Save the active session.
+- [x] Save the current question.
+- [x] Save the selected answer when appropriate.
+- [x] Restore the session after a page refresh.
+- [x] Clear restored state when the session ends.
 
 ### 75. Protect Against Accidental Navigation
 
-- [ ] Detect attempts to leave an active session.
-- [ ] Display a confirmation prompt.
-- [ ] Allow the user to continue the session.
-- [ ] Allow the user to end and leave the session.
-- [ ] Avoid showing warnings after session completion.
+- [x] Detect attempts to leave an active session.
+- [x] Display a confirmation prompt.
+- [x] Allow the user to continue the session.
+- [x] Allow the user to end and leave the session.
+- [x] Avoid showing warnings after session completion.
 
 ---
 
@@ -744,28 +744,28 @@ Initial routes:
 
 ### 76. Handle Invalid Stored Data
 
-- [ ] Detect invalid settings.
-- [ ] Detect invalid attempts.
-- [ ] Detect invalid sessions.
-- [ ] Detect invalid mistake patterns.
-- [ ] Reset only the affected data category.
-- [ ] Avoid crashing the application.
+- [x] Detect invalid settings.
+- [x] Detect invalid attempts.
+- [x] Detect invalid sessions.
+- [x] Detect invalid mistake patterns.
+- [x] Reset only the affected data category.
+- [x] Avoid crashing the application.
 
 ### 77. Handle Question-Generation Failures
 
-- [ ] Validate every generated question.
-- [ ] Retry generation after an invalid result.
-- [ ] Set a maximum retry count.
-- [ ] Provide a fallback question.
-- [ ] Log useful development errors.
+- [x] Validate every generated question.
+- [x] Retry generation after an invalid result.
+- [x] Set a maximum retry count.
+- [x] Provide a fallback question.
+- [x] Log useful development errors.
 
 ### 78. Add User-Friendly Error Messages
 
-- [ ] Add a general error component.
-- [ ] Explain storage errors in simple language.
-- [ ] Explain missing-session errors.
-- [ ] Provide a safe way to return home.
-- [ ] Avoid exposing technical stack traces.
+- [x] Add a general error component.
+- [x] Explain storage errors in simple language.
+- [x] Explain missing-session errors.
+- [x] Provide a safe way to return home.
+- [x] Avoid exposing technical stack traces.
 
 ---
 

@@ -83,7 +83,7 @@ describe('mistake tracking from history', () => {
       STORAGE_KEY,
       JSON.stringify({ ...emptyData(), version: 1, attempts: [attempt(0)] }),
     )
-    expect(readStorage().data.version).toBe(2)
+    expect(readStorage().data.version).toBe(3)
     expect(readStorage().data.mistakePatterns[0].incorrectCount).toBe(1)
   })
   it.each([

@@ -47,7 +47,18 @@ export type PracticeConfiguration = Pick<
   'operations' | 'difficulty' | 'sessionLength' | 'mode'
 >
 
-/** The active card stays in React state; attempts and session metadata are persisted. */
+export interface QuestionCardState {
+  selectedAnswer: number | null
+  isCardFlipped: boolean
+}
+/** The checkpoint references canonical session/attempt records without duplicating them. */
+export interface ActiveSessionSnapshot {
+  sessionId: string
+  question: Question | null
+  cardState: QuestionCardState
+}
+
+/** Runtime state and its active-card checkpoint are persisted together with attempts. */
 export interface PracticeSessionState {
   session: PracticeSession
   currentQuestionIndex: number
@@ -55,4 +66,6 @@ export interface PracticeSessionState {
   attempts: PracticeAttempt[]
   isActive: boolean
   error: string | null
+  feedback?: string
+  cardState?: QuestionCardState
 }

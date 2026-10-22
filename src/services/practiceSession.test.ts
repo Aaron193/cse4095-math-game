@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Question } from '../types/question'
 import type { PracticeConfiguration } from '../types/session'
+import * as recovery from './questionRecovery'
 import * as generator from './questionGenerator'
 import {
   createPracticeSession,
@@ -272,15 +273,15 @@ describe('practice session transitions', () => {
       1 + MAX_REPEAT_ATTEMPTS,
     )
   })
-  it('handles initial generation failure and retries without creating attempts', () => {
+  it('automatically retries a transient initial failure without creating attempts', () => {
     vi.mocked(generator.generateMultipleChoiceQuestion).mockImplementationOnce(
       () => {
         throw new Error('failed')
       },
     )
     const first = createPracticeSession(configuration)
-    expect(first.error).not.toBeNull()
-    expect(first.question).toBeNull()
+    expect(first.error).toBeNull()
+    expect(first.question).not.toBeNull()
     const recovered = retrySessionQuestion(first)
     expect(recovered.error).toBeNull()
     expect(recovered.question).not.toBeNull()
@@ -288,11 +289,16 @@ describe('practice session transitions', () => {
   })
   it('retains a recorded attempt if loading the following question fails', () => {
     const first = createPracticeSession(configuration)
-    vi.mocked(generator.generateMultipleChoiceQuestion).mockImplementationOnce(
+    vi.mocked(generator.generateMultipleChoiceQuestion).mockImplementation(
       () => {
         throw new Error('failed')
       },
     )
+    const fallback = vi
+      .spyOn(recovery, 'generateFallbackQuestion')
+      .mockImplementation(() => {
+        throw new Error('fallback failed')
+      })
     const second = recordSessionResult(
       first,
       first.question!.id,
@@ -305,6 +311,10 @@ describe('practice session transitions', () => {
     expect(recordSessionResult(second, first.question!.id, false, 0)).toBe(
       second,
     )
+    vi.mocked(generator.generateMultipleChoiceQuestion).mockImplementation(() =>
+      question(++generated),
+    )
+    fallback.mockRestore()
     const recovered = retrySessionQuestion(second)
     expect(recovered.session.attempted).toBe(1)
     expect(recovered.attempts).toHaveLength(1)

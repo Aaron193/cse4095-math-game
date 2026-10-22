@@ -2,6 +2,9 @@ import type {
   PracticeConfiguration,
   PracticeSessionState,
 } from '../types/session'
+import { generateFallbackQuestion } from './questionRecovery'
+import { reportDevelopmentError } from './developmentErrors'
+import { practiceFeedback } from './feedback'
 import type { Question } from '../types/question'
 import { createQuestionId as createId } from '../utils/ids'
 import { validateQuestion } from '../utils/validation'
@@ -12,6 +15,7 @@ import { generateSimilarQuestion } from './similarQuestionGenerator'
 import { generateMultipleChoiceQuestion } from './questionGenerator'
 
 export const MAX_REPEAT_ATTEMPTS = 8
+export const MAX_GENERATION_ATTEMPTS = 3
 
 export function isPracticeConfiguration(
   value: unknown,
@@ -62,6 +66,13 @@ function nextQuestion(
       candidate,
       new Set(state.attempts.map((attempt) => attempt.questionId)),
     )
+    if (
+      candidate.mistakePatternId !== pattern.id ||
+      candidate.difficulty !== state.session.difficulty ||
+      !state.session.operations.includes(candidate.operation) ||
+      candidate.source !== 'mistake-review'
+    )
+      throw new Error('Review question does not match its session')
     return candidate
   }
   const previous = state.attempts.at(-1)
@@ -72,6 +83,12 @@ function nextQuestion(
       state.session.difficulty,
     )
     validateQuestion(candidate, ids)
+    if (
+      candidate.difficulty !== state.session.difficulty ||
+      !state.session.operations.includes(candidate.operation) ||
+      candidate.source !== 'regular'
+    )
+      throw new Error('Question does not match its session')
     if (
       !previous ||
       candidate.operation !== previous.operation ||
@@ -102,14 +119,51 @@ function loadQuestion(
       },
     }
   }
+  let failure: unknown
+  for (let attempt = 0; attempt < MAX_GENERATION_ATTEMPTS; attempt++) {
+    try {
+      const question = nextQuestion(state, history)
+      return {
+        ...state,
+        question,
+        cardState: { selectedAnswer: null, isCardFlipped: false },
+        error: null,
+      }
+    } catch (error) {
+      failure = error
+    }
+  }
+  reportDevelopmentError(
+    'question generation failed; trying a safe fallback',
+    failure,
+  )
   try {
-    return { ...state, question: nextQuestion(state, history), error: null }
-  } catch {
+    const question = generateFallbackQuestion(state, history)
+    if (
+      question.difficulty !== state.session.difficulty ||
+      !state.session.operations.includes(question.operation) ||
+      question.source !==
+        (state.session.mode === 'mistake-review' ? 'mistake-review' : 'regular')
+    )
+      throw new Error('Fallback question does not match its session')
+    validateQuestion(
+      question,
+      new Set(state.attempts.map((attempt) => attempt.questionId)),
+    )
+    return {
+      ...state,
+      question,
+      cardState: { selectedAnswer: null, isCardFlipped: false },
+      error: null,
+    }
+  } catch (error) {
+    reportDevelopmentError('fallback question unavailable', error)
     return {
       ...state,
       question: null,
+      cardState: { selectedAnswer: null, isCardFlipped: false },
       error:
-        'We couldn’t load the next question. Try again, or end this session.',
+        'We couldn’t load the next question. Your completed answers are safe. Try again, or end this session.',
     }
   }
 }
@@ -172,6 +226,8 @@ export function recordSessionResult(
     attempted >= state.session.sessionLength
   const updated: PracticeSessionState = {
     ...state,
+    feedback: practiceFeedback(selfReportedCorrect),
+    cardState: { selectedAnswer: null, isCardFlipped: false },
     session: {
       ...state.session,
       attempted,
@@ -214,6 +270,7 @@ export function endPracticeSession(
   return {
     ...state,
     isActive: false,
+    cardState: { selectedAnswer: null, isCardFlipped: false },
     question: null,
     error: null,
     session: { ...state.session, completedAt: new Date().toISOString() },

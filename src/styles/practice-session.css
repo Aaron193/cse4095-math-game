@@ -2,11 +2,13 @@
   margin-block: 2rem;
 }
 .session-totals {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.75rem;
 }
 .session-totals > div {
+  flex: 1 1 8rem;
+  min-width: 0;
   background: #eaf0ff;
   border-radius: 0.75rem;
   padding: 0.75rem;
@@ -67,19 +69,64 @@
 }
 
 @media (max-width: 22rem) {
-  .session-totals {
-    grid-template-columns: 1fr;
-  }
   .session-totals > div {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.5rem 0.875rem;
+    padding: 0.5rem;
   }
   .session-totals dt {
     font-size: 1rem;
   }
   .session-totals dd {
     font-size: 1.5rem;
+  }
+}
+
+.welcome[aria-labelledby='session-heading'] > .configuration-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: 0.5rem 1rem;
+  padding: 1rem;
+  border-radius: 1rem;
+  background: #f1f7ff;
+}
+.welcome[aria-labelledby='session-heading'] > .configuration-summary dt {
+  margin: 0;
+}
+.practice-feedback {
+  padding: 1rem;
+  background: #fff1c9;
+  color: #694500;
+  border-radius: 1rem;
+  font-weight: 650;
+}
+.session-question {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 42rem;
+}
+@media (max-width: 30rem) {
+  .welcome[aria-labelledby='session-heading'] > .configuration-summary {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+  .welcome[aria-labelledby='session-heading'] > .configuration-summary dd {
+    margin-bottom: 0.5rem;
+  }
+}
+
+@media (max-width: 30rem) {
+  .session-totals > div {
+    flex-basis: 100%;
+    flex-wrap: wrap;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.5rem;
+  }
+  .session-totals dt {
+    font-size: 1rem;
   }
 }

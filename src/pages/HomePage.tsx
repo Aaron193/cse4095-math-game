@@ -21,8 +21,9 @@ export default function HomePage() {
           Settings
         </Link>
       </div>
-      <p className="coming-soon">
-        Practice activities are coming soon. For now, take a look around!
+      <p className="home-note">
+        Pick your pace, practice a little, and watch your confidence grow. Your
+        progress stays in this browser.
       </p>
     </section>
   )

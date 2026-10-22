@@ -1,9 +1,11 @@
+import TestRouter from '../test/TestRouter'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, useNavigate } from 'react-router'
+import { useNavigate } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '../app/App'
 import type { Question } from '../types/question'
+import * as recovery from '../services/questionRecovery'
 import * as generator from '../services/questionGenerator'
 
 let sequence = 0
@@ -38,10 +40,10 @@ function ReturnToSession() {
 }
 function renderApp() {
   render(
-    <MemoryRouter initialEntries={['/practice/setup']}>
+    <TestRouter initialEntries={['/practice/setup']}>
       <App />
       <ReturnToSession />
-    </MemoryRouter>,
+    </TestRouter>,
   )
 }
 async function start(
@@ -163,6 +165,7 @@ describe('functional practice session page', () => {
 
   it('retains an active session across route navigation and only starts fresh on an explicit setup submission', async () => {
     const user = userEvent.setup()
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
     renderApp()
     await start(user)
     await answer(user, false)
@@ -173,6 +176,7 @@ describe('functional practice session page', () => {
           : 'Back to home',
       }),
     )
+    await user.click(screen.getByRole('button', { name: 'Save and Leave' }))
     await user.click(
       screen.getByRole('button', { name: 'Return to session route' }),
     )
@@ -182,6 +186,7 @@ describe('functional practice session page', () => {
     await user.click(
       screen.getByRole('link', { name: 'Change practice choices' }),
     )
+    await user.click(screen.getByRole('button', { name: 'Save and Leave' }))
     await user.click(screen.getByRole('button', { name: 'Start Session' }))
     expect(screen.getByText('Question 1 of 5')).toBeInTheDocument()
     expect(total('Attempted')).toHaveTextContent('0')
@@ -220,7 +225,15 @@ describe('functional practice session page', () => {
     const user = userEvent.setup()
     renderApp()
     await start(user)
-    vi.mocked(generator.generateMultipleChoiceQuestion).mockImplementationOnce(
+    const healthy = vi
+      .mocked(generator.generateMultipleChoiceQuestion)
+      .getMockImplementation()!
+    const fallback = vi
+      .spyOn(recovery, 'generateFallbackQuestion')
+      .mockImplementation(() => {
+        throw new Error('fallback failed')
+      })
+    vi.mocked(generator.generateMultipleChoiceQuestion).mockImplementation(
       () => {
         throw new Error('failed')
       },
@@ -230,6 +243,10 @@ describe('functional practice session page', () => {
       'couldn’t load the next question',
     )
     expect(total('Attempted')).toHaveTextContent('1')
+    vi.mocked(generator.generateMultipleChoiceQuestion).mockImplementation(
+      healthy,
+    )
+    fallback.mockRestore()
     await user.click(
       screen.getByRole('button', { name: 'Try loading a question again' }),
     )

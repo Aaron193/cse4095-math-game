@@ -12,7 +12,7 @@ import '../styles/session-summary.css'
 import '../styles/practice-session.css'
 
 export default function SessionSummaryPage() {
-  const { state, startSession } = useSession()
+  const { state, startSession, startError } = useSession()
   const { setConfiguration } = usePracticeConfiguration()
   const navigate = useNavigate()
   const heading = useRef<HTMLHeadingElement>(null)
@@ -117,7 +117,7 @@ export default function SessionSummaryPage() {
               Return Home
             </Link>
           </div>
-          <p role="status">{reviewMessage}</p>
+          <p role="status">{startError ?? reviewMessage}</p>
         </>
       ) : (
         <>

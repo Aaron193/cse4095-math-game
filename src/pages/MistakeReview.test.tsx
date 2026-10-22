@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router'
+import TestRouter from '../test/TestRouter'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from '../app/App'
 import { mistakeAttempt } from '../test/mistakeData'
@@ -10,13 +10,14 @@ import {
   readStorage,
   writeStorage,
 } from '../services/storageService'
+import * as recovery from '../services/questionRecovery'
 import * as similar from '../services/similarQuestionGenerator'
 
 function open(path = '/practice/setup?mode=mistake-review') {
   return render(
-    <MemoryRouter initialEntries={[path]}>
+    <TestRouter initialEntries={[path]}>
       <App />
-    </MemoryRouter>,
+    </TestRouter>,
   )
 }
 function seed() {
@@ -126,18 +127,26 @@ describe('mistake-review interface', () => {
     const user = userEvent.setup()
     open()
     await user.click(screen.getByRole('button', { name: 'Start Session' }))
+    const healthy = similar.generateSimilarQuestion
+    const fallback = vi
+      .spyOn(recovery, 'generateFallbackQuestion')
+      .mockImplementation(() => {
+        throw new Error('fallback failed')
+      })
     const generated = vi
       .spyOn(similar, 'generateSimilarQuestion')
-      .mockImplementationOnce(() => {
+      .mockImplementation(() => {
         throw new Error('failed')
       })
     await answer(user, true)
     expect(screen.getByRole('alert')).toHaveTextContent('couldn’t load')
     expect(readStorage().data.mistakePatterns[0].similarCorrectCount).toBe(1)
+    generated.mockImplementation(healthy)
+    fallback.mockRestore()
     await user.click(
       screen.getByRole('button', { name: 'Try loading a question again' }),
     )
-    expect(generated).toHaveBeenCalledTimes(2)
+    expect(generated).toHaveBeenCalledTimes(4)
     expect(readStorage().data.mistakePatterns[0].similarCorrectCount).toBe(1)
     const totals = within(
       screen.getByRole('region', { name: 'Session progress' }),

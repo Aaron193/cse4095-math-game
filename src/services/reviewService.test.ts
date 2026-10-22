@@ -195,12 +195,13 @@ describe('review sessions reuse session progression', () => {
   })
 })
 
-it('rejects a reused review question ID while retaining the accepted attempt', () => {
+it('recovers from a reused review question ID while retaining the accepted attempt', () => {
   const state = createPracticeSession(config, history)
   const question = state.question!
   vi.spyOn(similar, 'generateSimilarQuestion').mockReturnValueOnce(question)
   const next = record(state, false)
   expect(next.attempts).toHaveLength(1)
-  expect(next.question).toBeNull()
-  expect(next.error).toBeTruthy()
+  expect(next.question?.id).not.toBe(question.id)
+  expect(next.question).not.toBeNull()
+  expect(next.error).toBeNull()
 })

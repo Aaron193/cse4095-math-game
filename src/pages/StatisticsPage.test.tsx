@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router'
+import TestRouter from '../test/TestRouter'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from '../app/App'
 import { practiceData } from '../test/practiceData'
@@ -8,9 +8,9 @@ import { readStorage, writeStorage } from '../services/storageService'
 
 function open(path = '/statistics') {
   return render(
-    <MemoryRouter initialEntries={[path]}>
+    <TestRouter initialEntries={[path]}>
       <App />
-    </MemoryRouter>,
+    </TestRouter>,
   )
 }
 function expectTotals(

@@ -1,6 +1,7 @@
+import TestRouter from '../test/TestRouter'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, useLocation, useNavigate } from 'react-router'
+import { useLocation, useNavigate } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from '../app/App'
 import PracticeConfigurationProvider from '../app/PracticeConfigurationProvider'
@@ -66,22 +67,24 @@ function renderSummary(
       configuration.operations.length > 0,
   )
   render(
-    <MemoryRouter initialEntries={['/practice/summary']}>
+    <TestRouter initialEntries={['/practice/summary']}>
       <PracticeConfigurationProvider>
         <PracticeSessionContext.Provider
           value={{
             state,
+            startError: null,
             startSession,
             recordResult: vi.fn(),
             endSession: vi.fn(),
             retryQuestion: vi.fn(),
+            updateCardState: vi.fn(),
           }}
         >
           <SessionSummaryPage />
         </PracticeSessionContext.Provider>
       </PracticeConfigurationProvider>
       <RouteProbe />
-    </MemoryRouter>,
+    </TestRouter>,
   )
   return { startSession }
 }
@@ -111,10 +114,10 @@ function enableMockQuestions() {
 }
 function renderApplication() {
   render(
-    <MemoryRouter initialEntries={['/practice/setup']}>
+    <TestRouter initialEntries={['/practice/setup']}>
       <App />
       <RouteProbe />
-    </MemoryRouter>,
+    </TestRouter>,
   )
 }
 async function start(

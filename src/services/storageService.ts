@@ -5,6 +5,7 @@ import {
 } from './mistakeService'
 import type { AppSettings } from '../types/settings'
 import type {
+  ActiveSessionSnapshot,
   PracticeAttempt,
   PracticeSession,
   PracticeSessionState,
@@ -16,7 +17,10 @@ import {
   isMathOperation,
   operationSymbols,
 } from './questionRules'
-import { validateArithmeticQuestion } from '../utils/validation'
+import {
+  validateArithmeticQuestion,
+  validateQuestion,
+} from '../utils/validation'
 import {
   calculateStatistics,
   recentSessions,
@@ -24,7 +28,7 @@ import {
 } from './statisticsService'
 
 export const STORAGE_KEY = 'mathPractice.data'
-export const SCHEMA_VERSION = 2
+export const SCHEMA_VERSION = 3
 // Retain all attempts for lifetime totals; bound only older session metadata.
 export const MAX_SESSION_RECORDS = 500
 export interface StoredData {
@@ -34,6 +38,7 @@ export interface StoredData {
   attempts: PracticeAttempt[]
   statistics: AppStatistics
   mistakePatterns: MistakePattern[]
+  activeSession: ActiveSessionSnapshot | null
 }
 export interface StorageResult {
   data: StoredData
@@ -42,6 +47,7 @@ export interface StorageResult {
 }
 export function defaultSettings(): AppSettings {
   return {
+    feedbackEnabled: true,
     soundEnabled: false,
     cardAnimationEnabled: true,
     showExplanations: false,
@@ -59,6 +65,7 @@ export function emptyData(): StoredData {
     attempts: [],
     statistics: calculateStatistics([]),
     mistakePatterns: [],
+    activeSession: null,
   }
 }
 const object = (value: unknown): value is Record<string, unknown> =>
@@ -73,6 +80,8 @@ const timestamp = (value: unknown): value is string =>
 export function isAppSettings(value: unknown): value is AppSettings {
   if (!object(value)) return false
   return (
+    (value.feedbackEnabled === undefined ||
+      typeof value.feedbackEnabled === 'boolean') &&
     ['soundEnabled', 'cardAnimationEnabled', 'showExplanations'].every(
       (key) => typeof value[key] === 'boolean',
     ) &&
@@ -87,6 +96,35 @@ export function isAppSettings(value: unknown): value is AppSettings {
     (value.masteryThreshold as number) > 0
   )
 }
+export function normalizeSettings(value: unknown): AppSettings {
+  const settings = defaultSettings()
+  if (!object(value)) return settings
+  for (const key of ['cardAnimationEnabled', 'feedbackEnabled'] as const)
+    if (typeof value[key] === 'boolean') settings[key] = value[key]
+  if ([1, 2, 3, 4].includes(value.defaultDifficulty as number))
+    settings.defaultDifficulty =
+      value.defaultDifficulty as AppSettings['defaultDifficulty']
+  if (
+    [5, 10, 20, 'continuous'].includes(
+      value.defaultSessionLength as number | string,
+    )
+  )
+    settings.defaultSessionLength =
+      value.defaultSessionLength as AppSettings['defaultSessionLength']
+  if (Array.isArray(value.defaultOperations)) {
+    const operations = [
+      ...new Set(value.defaultOperations.filter(isMathOperation)),
+    ]
+    if (operations.length) settings.defaultOperations = operations
+  }
+  if (
+    Number.isSafeInteger(value.masteryThreshold) &&
+    (value.masteryThreshold as number) > 0
+  )
+    settings.masteryThreshold = value.masteryThreshold as number
+  return settings
+}
+
 function isAttempt(value: unknown): value is PracticeAttempt {
   if (
     !object(value) ||
@@ -154,33 +192,152 @@ export function normalizeData(value: unknown): StoredData {
     for (const session of data.sessions.filter(isSession)) {
       sessions.set(session.id, sessionTotals(session, attempts))
     }
-  const settings = isAppSettings(data.settings)
-    ? {
-        ...data.settings,
-        defaultOperations: [...data.settings.defaultOperations],
-      }
-    : defaultSettings()
+  const settings = normalizeSettings(data.settings)
   // These two features have no implementation yet; do not retain a misleading enabled preference.
   settings.soundEnabled = false
   settings.showExplanations = false
+  const mistakePatterns = deriveMistakePatterns(
+    attempts,
+    settings.masteryThreshold,
+  )
+  // An exhausted fixed session is completed even if its old active checkpoint survived corruption.
+  for (const [id, session] of sessions) {
+    if (
+      !session.completedAt &&
+      session.sessionLength !== 'continuous' &&
+      session.attempted >= session.sessionLength
+    ) {
+      const latest =
+        attempts.filter((attempt) => attempt.sessionId === id).at(-1)
+          ?.attemptedAt ?? session.startedAt
+      sessions.set(id, {
+        ...session,
+        completedAt: new Date(
+          Math.max(Date.parse(latest), Date.parse(session.startedAt)),
+        ).toISOString(),
+      })
+    }
+  }
+  const activeSession = normalizeActiveSession(
+    data.activeSession,
+    sessions,
+    attempts,
+    mistakePatterns,
+  )
+  let retained = recentSessions([...sessions.values()], MAX_SESSION_RECORDS)
+  if (
+    activeSession &&
+    !retained.some((session) => session.id === activeSession.sessionId)
+  )
+    retained = [
+      ...retained.slice(0, MAX_SESSION_RECORDS - 1),
+      sessions.get(activeSession.sessionId)!,
+    ]
   return {
     version: SCHEMA_VERSION,
     settings,
     attempts,
-    sessions: recentSessions([...sessions.values()], MAX_SESSION_RECORDS),
+    sessions: retained,
     statistics: calculateStatistics(attempts),
-    mistakePatterns: deriveMistakePatterns(attempts, settings.masteryThreshold),
+    mistakePatterns,
+    activeSession,
   }
 }
+/** Repair only a damaged card/selection, preserving valid attempts and its unfinished session. */
+function normalizeActiveSession(
+  value: unknown,
+  sessions: ReadonlyMap<string, PracticeSession>,
+  attempts: readonly PracticeAttempt[],
+  patterns: readonly MistakePattern[],
+): ActiveSessionSnapshot | null {
+  if (!object(value) || !identifier(value.sessionId)) return null
+  const session = sessions.get(value.sessionId)
+  if (!session || session.completedAt) return null
+  let question = null
+  try {
+    validateQuestion(
+      value.question,
+      new Set(attempts.map((attempt) => attempt.questionId)),
+    )
+    const candidate = value.question
+    if (
+      candidate.difficulty !== session.difficulty ||
+      !session.operations.includes(candidate.operation)
+    )
+      throw new Error('Mismatched checkpoint')
+    if (session.mode === 'mistake-review') {
+      if (
+        candidate.source !== 'mistake-review' ||
+        !patterns.some(
+          (pattern) =>
+            pattern.id === candidate.mistakePatternId &&
+            !pattern.mastered &&
+            pattern.difficulty === session.difficulty &&
+            session.operations.includes(pattern.operation),
+        )
+      )
+        throw new Error('Invalid review checkpoint')
+    } else if (candidate.source !== 'regular')
+      throw new Error('Invalid regular checkpoint')
+    question = candidate
+  } catch {
+    /* Keep the session with a recoverable question-loading action. */
+  }
+  const rawCard = object(value.cardState) ? value.cardState : {}
+  const selectedAnswer =
+    typeof rawCard.selectedAnswer === 'number' &&
+    question?.choices.includes(rawCard.selectedAnswer)
+      ? rawCard.selectedAnswer
+      : null
+  return {
+    sessionId: session.id,
+    question,
+    cardState: {
+      selectedAnswer,
+      isCardFlipped: selectedAnswer !== null && rawCard.isCardFlipped === true,
+    },
+  }
+}
+
+export function restoreSavedSession(
+  data: StoredData,
+): PracticeSessionState | null {
+  const checkpoint = data.activeSession
+  const session =
+    checkpoint &&
+    data.sessions.find(
+      (item) => item.id === checkpoint.sessionId && !item.completedAt,
+    )
+  if (!checkpoint || !session) return restoreCompletedSession(data)
+  return {
+    session,
+    attempts: data.attempts.filter(
+      (attempt) => attempt.sessionId === session.id,
+    ),
+    question: checkpoint.question,
+    cardState: checkpoint.cardState,
+    currentQuestionIndex: session.attempted,
+    isActive: true,
+    error: checkpoint.question
+      ? null
+      : 'Your answers are safe. We need to load your next question again.',
+  }
+}
+
 function browserStorage(): Storage {
   return window.localStorage
 }
 const unavailable =
   'Your progress could not be saved. You can keep practicing, but new progress may be lost when you close or refresh this page.'
-/** Missing-version/version-0/version-1 snapshots share today's fields; add future migrations here. */
+/** Missing-version/version-0/version-1/version-2 snapshots share today's fields; add future migrations here. */
 function migrate(value: unknown): unknown {
   if (!object(value)) throw new Error('Invalid storage document')
-  if (value.version === undefined || value.version === 0 || value.version === 1)
+  if (
+    value.version === undefined ||
+    value.version === 0 ||
+    value.version === 1 ||
+    value.version === 2
+  )
     return { ...value, version: SCHEMA_VERSION }
   return value
 }
@@ -202,6 +359,7 @@ export function readStorage(
       parsed.version !== undefined &&
       parsed.version !== 0 &&
       parsed.version !== 1 &&
+      parsed.version !== 2 &&
       parsed.version !== SCHEMA_VERSION
     ) {
       return {
@@ -261,6 +419,16 @@ export function saveSession(
 ): StoredData {
   return normalizeData({
     ...data,
+    activeSession: state.isActive
+      ? {
+          sessionId: state.session.id,
+          question: state.question,
+          cardState: state.cardState ?? {
+            selectedAnswer: null,
+            isCardFlipped: false,
+          },
+        }
+      : null,
     attempts: uniqueAttempts([...data.attempts, ...state.attempts]),
     sessions: [
       ...data.sessions.filter((session) => session.id !== state.session.id),

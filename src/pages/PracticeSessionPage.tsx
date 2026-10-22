@@ -6,7 +6,9 @@ import { isPracticeConfiguration } from '../services/practiceSession'
 export default function PracticeSessionPage() {
   const { state } = useSession()
   if (!state || !isPracticeConfiguration(state.session))
-    return <Navigate to="/practice/setup" replace />
+    return (
+      <Navigate to="/practice/setup" replace state={{ missingSession: true }} />
+    )
   if (!state.isActive) return <Navigate to="/practice/summary" replace />
   return <PracticeSessionContent state={state} />
 }

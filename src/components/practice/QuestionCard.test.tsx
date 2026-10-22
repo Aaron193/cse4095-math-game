@@ -38,7 +38,7 @@ describe('question card', () => {
   it('displays the question, four answers, progress, and disabled flip button', () => {
     renderCard()
     expect(
-      screen.getByRole('heading', { name: '8 × 7 = ?' }),
+      screen.getByRole('heading', { name: '8 multiplied by 7 equals what?' }),
     ).toBeInTheDocument()
     expect(screen.getByText('Question 3 of 10')).toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: /^Answer / })).toHaveLength(4)

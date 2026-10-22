@@ -1,6 +1,7 @@
+import TestRouter from '../test/TestRouter'
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, useLocation } from 'react-router'
+import { useLocation } from 'react-router'
 import { describe, expect, it } from 'vitest'
 import App from '../app/App'
 
@@ -11,10 +12,10 @@ function RouteLocation() {
 
 function renderSetup(path = '/practice/setup') {
   return render(
-    <MemoryRouter initialEntries={[path]}>
+    <TestRouter initialEntries={[path]}>
       <App />
       <RouteLocation />
-    </MemoryRouter>,
+    </TestRouter>,
   )
 }
 
@@ -237,6 +238,7 @@ describe('configuration validation and handoff', () => {
     await user.click(
       screen.getByRole('link', { name: 'Change practice choices' }),
     )
+    await user.click(screen.getByRole('button', { name: 'Save and Leave' }))
     for (const checkbox of screen.getAllByRole('checkbox'))
       expect(checkbox).toBeChecked()
     expect(screen.getByRole('radio', { name: 'Intermediate' })).toBeChecked()

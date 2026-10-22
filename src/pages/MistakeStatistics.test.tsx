@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router'
+import TestRouter from '../test/TestRouter'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from '../app/App'
 import { mistakeAttempt as attempt } from '../test/mistakeData'
@@ -29,9 +29,9 @@ function seed() {
 }
 function open() {
   return render(
-    <MemoryRouter initialEntries={['/statistics']}>
+    <TestRouter initialEntries={['/statistics']}>
       <App />
-    </MemoryRouter>,
+    </TestRouter>,
   )
 }
 function region() {

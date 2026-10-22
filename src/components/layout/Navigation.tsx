@@ -1,4 +1,4 @@
-import { NavLink, useMatch } from 'react-router'
+import { Link, NavLink, useMatch } from 'react-router'
 
 export default function Navigation() {
   const isPracticeRoute = useMatch('/practice/*') !== null
@@ -12,12 +12,13 @@ export default function Navigation() {
           </NavLink>
         </li>
         <li>
-          <NavLink
+          <Link
             to="/practice/setup"
+            aria-current={isPracticeRoute ? 'page' : undefined}
             className={isPracticeRoute ? 'active' : undefined}
           >
             Practice
-          </NavLink>
+          </Link>
         </li>
         <li>
           <NavLink to="/statistics">Statistics</NavLink>
