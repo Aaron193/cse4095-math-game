@@ -811,7 +811,7 @@ Initial routes:
 - [x] Complete a session using only the keyboard.
 - [ ] Test with a screen reader.
 - [x] Test reduced-motion mode.
-- [ ] Test browser zoom.
+- [x] Test browser zoom.
 - [x] Run an automated accessibility checker.
 - [x] Manually review reported issues.
 
@@ -875,11 +875,11 @@ Initial routes:
 ### 89. Deploy the Application
 
 - [x] Select a hosting service.
-- [ ] Deploy the production build.
-- [ ] Verify every route.
-- [ ] Verify local-storage persistence.
-- [ ] Verify responsive behavior.
-- [ ] Verify that no development errors appear in the console.
+- [x] Deploy the production build.
+- [x] Verify every route.
+- [x] Verify local-storage persistence.
+- [x] Verify responsive behavior.
+- [x] Verify that no development errors appear in the console.
 
 ---
 
@@ -887,14 +887,14 @@ Initial routes:
 
 - Reused the 479 existing tests. Added four real-generator mixed-session cases (one per difficulty) and one 5,010-attempt retention/serialization regression. The complete suite and required checks are recorded in README.md.
 - Production Chrome smoke testing completed a keyboard-only five-question session, reduced-motion checks, direct routes and safe missing-session behavior, tablet/mobile overflow checks, and populated statistics. Existing recovery/reset/review/mastery integration tests were reused.
-- Axe found no WCAG-tagged violations on home, setup, statistics, settings, missing-session/summary states, both card faces, and populated mobile statistics. Card-front contrast was incomplete automatically; source color pairs were reviewed and calculated at 5.71:1 or better. Actual screen-reader testing remains unchecked. Browser zoom was documented in earlier phases but was not repeated in this focused final pass; leave its final check open.
+- Axe found no WCAG-tagged violations on home, setup, statistics, settings, missing-session/summary states, both card faces, and populated mobile statistics. Card-front contrast was incomplete automatically; source color pairs were reviewed and calculated at 5.71:1 or better. Actual screen-reader testing remains unchecked. Deployed setup, statistics, and settings pages subsequently passed actual 200% browser zoom checks in Chrome.
 - Tested 5,000 attempts, 500 sessions, and about 876 mistake patterns. At 4× Chrome CPU throttling, statistics navigation/rendering including polling took about 1.25 seconds; filters worked and recent history remained limited to 20. Browser setItem took about 40 ms under throttling. Storage was about 1.85 MB UTF-8 / 3.69 MB UTF-16. These timings are observations, not guarantees for physical slow devices.
 - Grouping attempts by session reduced normalization from about 52–79 ms to 9–25 ms locally. Memoized mistake calculations/sorting across display-filter changes. Generation already occurs outside render; shared checkpoint updates are necessary for recovery. No broad rendering refactor was warranted.
 - Detailed sessions are already capped at 500; pruning metadata preserves all attempts and totals (verified). Attempt archiving and archive-specific aggregates remain unchecked/deferred: replay supports mastery and the tested history fits storage. Unbounded future history can hit browser quota; warnings and in-memory continuation are covered.
 - Initial JavaScript is about 377 KB / 116 KB gzip and CSS about 12 KB / 3 KB gzip. Dependencies were reviewed; no unused runtime dependencies, remote fonts, or images need removal/optimization. Lazy loading remains unchecked/deferred because no measured problem warranted it. Slower-device testing used CPU emulation only.
 - Privacy review found no personal-data input, practice-data upload, tracking, or advertisements. Local-data loss is explained in Settings and README.md. Ordinary host access logs are outside application storage.
 - Safari, Firefox, Edge, real screen-reader output, and physical devices remain unverified. Chrome device emulation does not establish coverage of those browsers/hardware.
-- Netlify is selected and configured; dist/_redirects provides the SPA fallback for manual or Git-connected deployment. The local production build was tested. Task 89 route/persistence/responsiveness/console checks remain unchecked because they refer to the hosted deployment, which was intentionally not performed. No deploy, commit, or push was made; specification.md was not modified.
+- I published the repository to GitHub and deployed the production build at https://cse4095-math-game.netlify.app. Netlify configuration and React Router were reviewed; no changes were needed. All six hosted routes loaded directly, including the expected empty-session redirect. Hosted workflow, refresh persistence, responsive layout, and console checks passed in isolated Chrome profiles. The agent did not commit, push, or redeploy; specification.md was not modified.
 - Main specification/MVP requirements are covered. Optional sound and step-by-step explanations remain visibly unavailable; no new features were added.
 
 ---

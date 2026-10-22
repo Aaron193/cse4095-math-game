@@ -1,5 +1,7 @@
 # Math Practice App
 
+Live application: [cse4095-math-game.netlify.app](https://cse4095-math-game.netlify.app) · GitHub repository: [Aaron193/cse4095-math-game](https://github.com/Aaron193/cse4095-math-game)
+
 A React and TypeScript arithmetic practice app for children ages 7–12. Practice addition, subtraction, multiplication, and division at four difficulty levels, with multiple-choice cards, fixed or continuous sessions, mistake review, mastery tracking, and statistics. Results follow the student's **I Got It Right / I Got It Wrong** choices.
 
 ## Installation and development
@@ -30,7 +32,7 @@ Final verification details and outstanding checks are recorded below and in [TOD
 
 ## Deploy to Netlify
 
-No deployment, commit, or push has been performed.
+The project is published on GitHub and deployed to Netlify at the links above. The following instructions describe how to build and deploy future updates.
 
 ### Manual deployment (no GitHub connection required)
 
@@ -38,7 +40,7 @@ No deployment, commit, or push has been performed.
 2. Sign in to Netlify and choose **Add new project → Deploy manually**, or open [Netlify Drop](https://app.netlify.com/drop).
 3. Drag the **dist folder** into the deployment area. Upload only this folder, not the repository.
 4. Open the assigned HTTPS site URL. Visit and refresh `/practice/setup`, `/practice/session`, `/practice/summary`, `/statistics`, and `/settings`. Without a saved session, `/practice/session` intentionally returns to setup.
-5. Complete a short session, refresh, and confirm the saved statistics. Check narrow/tablet layouts and the browser console. These hosted checks remain outstanding until deployment.
+5. Complete a short session, refresh, and confirm the saved statistics. Check narrow/tablet layouts and the browser console. Repeat these hosted checks after future deployments.
 
 ### Deployment from GitHub (optional)
 
@@ -60,7 +62,8 @@ Storage is finite. When writes fail or storage is blocked, the app warns and con
 ## Final verification: Phases 20–22
 
 - All **484 tests in 37 files pass**. TypeScript, ESLint (zero warnings), Prettier, and the production build pass. The first full run timed out one new integration case at the default five-second limit; its focused run passed, its timeout was set to 15 seconds, and the full rerun passed.
-- Production Chrome smoke tests passed nested route handling, a keyboard-only session, reduced motion, summaries, and tablet/mobile overflow checks with no runtime/console errors. Axe reported no WCAG-tagged violations across main pages, card faces, and populated mobile statistics. Card-front contrast was incomplete automatically; reviewing its CSS text/background pairs gave ratios of at least 5.71:1. Final browser zoom testing was not repeated; earlier-phase verification is not a substitute for the remaining manual release checks.
+- Final submission checks exercised the public Netlify deployment in isolated Chrome profiles: all six routes, mixed sessions at all four difficulties, card flips, summaries, statistics, refresh recovery, mistake review and mastery, continuous practice, navigation safety, and confirmed/canceled data resets passed. Desktop, tablet, and mobile layouts down to 320px had no horizontal overflow, and no runtime or console errors were recorded. The deployed JavaScript and CSS matched the local production build. No application code, dependencies, or deployment configuration needed changes.
+- Production Chrome smoke tests passed nested route handling, a keyboard-only session, reduced motion, summaries, and tablet/mobile overflow checks with no runtime/console errors. Axe reported no WCAG-tagged violations across main pages, card faces, and populated mobile statistics. Card-front contrast was incomplete automatically; reviewing its CSS text/background pairs gave ratios of at least 5.71:1. The deployed setup, statistics, and settings pages also passed actual 200% browser zoom checks.
 - With 5,000 attempts, 500 sessions, and approximately 876 mistake patterns, statistics loaded in about 1.25 seconds with 4× CPU throttling (navigation/rendering including polling). View filters and the 20-session list worked. A browser storage write under throttling took about 40 ms. This is a synthetic check, not a physical-device benchmark.
 - Existing coverage was reused. Five focused tests add complete mixed-operation sessions at all four difficulties using real generators and a 5,010-attempt storage round trip, including session retention, repaired counters, lifetime totals, and mistake counts.
 - Storage normalization previously scanned all attempts for each session. Grouping by session reduced measured 5,000-attempt/500-session normalization from approximately 52–79 ms to 9–25 ms locally. Serialization plus normalization fell from approximately 33–48 ms to 15–24 ms (in-memory storage adapter; browser writes measured separately). These are observational timings, not test thresholds.
@@ -71,7 +74,7 @@ Sound effects and step-by-step explanations remain visibly unavailable optional 
 
 ## Manual checks still required
 
-Use a real screen reader to verify question, answer, progress, and dialog announcements. Confirm contrast where automated checks cannot resolve transformed card layers. Test Safari, Firefox, Edge, physical touch devices, and larger operating-system fonts. Emulation and automated checks do not establish full WCAG conformance. Hosted routing, persistence, responsive behavior, and console checks must be repeated after deployment.
+Use a real screen reader to verify question, answer, progress, and dialog announcements. Confirm contrast where automated checks cannot resolve transformed card layers. Test Safari, Firefox, Edge, physical touch devices, and larger operating-system fonts. Emulation and automated checks do not establish full WCAG conformance. Repeat hosted routing, persistence, responsive behavior, and console checks after future deployments.
 
 ## Project structure
 
