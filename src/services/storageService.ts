@@ -187,10 +187,20 @@ export function normalizeData(value: unknown): StoredData {
   const attempts = uniqueAttempts(
     Array.isArray(data.attempts) ? data.attempts.filter(isAttempt) : [],
   )
+  // Group once rather than scanning the entire history for every saved session.
+  const attemptsBySession = new Map<string, PracticeAttempt[]>()
+  for (const attempt of attempts) {
+    const records = attemptsBySession.get(attempt.sessionId)
+    if (records) records.push(attempt)
+    else attemptsBySession.set(attempt.sessionId, [attempt])
+  }
   const sessions = new Map<string, PracticeSession>()
   if (Array.isArray(data.sessions))
     for (const session of data.sessions.filter(isSession)) {
-      sessions.set(session.id, sessionTotals(session, attempts))
+      sessions.set(
+        session.id,
+        sessionTotals(session, attemptsBySession.get(session.id) ?? []),
+      )
     }
   const settings = normalizeSettings(data.settings)
   // These two features have no implementation yet; do not retain a misleading enabled preference.
@@ -208,8 +218,7 @@ export function normalizeData(value: unknown): StoredData {
       session.attempted >= session.sessionLength
     ) {
       const latest =
-        attempts.filter((attempt) => attempt.sessionId === id).at(-1)
-          ?.attemptedAt ?? session.startedAt
+        attemptsBySession.get(id)?.at(-1)?.attemptedAt ?? session.startedAt
       sessions.set(id, {
         ...session,
         completedAt: new Date(

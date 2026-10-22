@@ -773,47 +773,47 @@ Initial routes:
 
 ### 79. Complete Unit Tests
 
-- [ ] Test all arithmetic generators.
-- [ ] Test difficulty boundaries.
-- [ ] Test distractor generation.
-- [ ] Test answer-choice uniqueness.
-- [ ] Test statistics calculations.
-- [ ] Test mistake-pattern updates.
-- [ ] Test similar-question generation.
-- [ ] Test mastery rules.
-- [ ] Test storage serialization and validation.
+- [x] Test all arithmetic generators.
+- [x] Test difficulty boundaries.
+- [x] Test distractor generation.
+- [x] Test answer-choice uniqueness.
+- [x] Test statistics calculations.
+- [x] Test mistake-pattern updates.
+- [x] Test similar-question generation.
+- [x] Test mastery rules.
+- [x] Test storage serialization and validation.
 
 ### 80. Complete Component Tests
 
-- [ ] Test operation selection.
-- [ ] Test difficulty selection.
-- [ ] Test answer selection.
-- [ ] Test card flipping.
-- [ ] Test right and wrong buttons.
-- [ ] Test progress updates.
-- [ ] Test session completion.
-- [ ] Test statistics display.
-- [ ] Test confirmation dialogs.
+- [x] Test operation selection.
+- [x] Test difficulty selection.
+- [x] Test answer selection.
+- [x] Test card flipping.
+- [x] Test right and wrong buttons.
+- [x] Test progress updates.
+- [x] Test session completion.
+- [x] Test statistics display.
+- [x] Test confirmation dialogs.
 
 ### 81. Complete Integration Tests
 
-- [ ] Test a full addition session.
-- [ ] Test a mixed-operation session.
-- [ ] Test continuous practice.
-- [ ] Test an incorrect answer creating a mistake pattern.
-- [ ] Test mistake-review generation.
-- [ ] Test mastery completion.
-- [ ] Test persistence after a browser refresh.
-- [ ] Test resetting statistics.
+- [x] Test a full addition session.
+- [x] Test a mixed-operation session.
+- [x] Test continuous practice.
+- [x] Test an incorrect answer creating a mistake pattern.
+- [x] Test mistake-review generation.
+- [x] Test mastery completion.
+- [x] Test persistence after a browser refresh.
+- [x] Test resetting statistics.
 
 ### 82. Complete Accessibility Testing
 
-- [ ] Complete a session using only the keyboard.
+- [x] Complete a session using only the keyboard.
 - [ ] Test with a screen reader.
-- [ ] Test reduced-motion mode.
+- [x] Test reduced-motion mode.
 - [ ] Test browser zoom.
-- [ ] Run an automated accessibility checker.
-- [ ] Manually review reported issues.
+- [x] Run an automated accessibility checker.
+- [x] Manually review reported issues.
 
 ---
 
@@ -821,26 +821,26 @@ Initial routes:
 
 ### 83. Optimize React Rendering
 
-- [ ] Identify unnecessary component re-renders.
-- [ ] Memoize expensive statistics calculations.
-- [ ] Keep question generation outside render logic.
-- [ ] Avoid unnecessary global state updates.
+- [x] Identify unnecessary component re-renders.
+- [x] Memoize expensive statistics calculations.
+- [x] Keep question generation outside render logic.
+- [x] Avoid unnecessary global state updates.
 
 ### 84. Manage Large Practice Histories
 
-- [ ] Test with several thousand attempts.
-- [ ] Measure local-storage usage.
-- [ ] Limit the number of detailed recent sessions.
+- [x] Test with several thousand attempts.
+- [x] Measure local-storage usage.
+- [x] Limit the number of detailed recent sessions.
 - [ ] Summarize older attempt records if necessary.
 - [ ] Preserve aggregate statistics when archiving details.
 
 ### 85. Improve Loading Performance
 
-- [ ] Measure the initial bundle size.
+- [x] Measure the initial bundle size.
 - [ ] Lazy-load statistics and settings pages.
-- [ ] Remove unused dependencies.
-- [ ] Optimize fonts and images.
-- [ ] Test on slower devices.
+- [x] Remove unused dependencies.
+- [x] Optimize fonts and images.
+- [x] Test on slower devices.
 
 ---
 
@@ -848,38 +848,54 @@ Initial routes:
 
 ### 86. Complete Privacy Review
 
-- [ ] Confirm that no personal information is collected.
-- [ ] Confirm that practice data remains in the browser.
-- [ ] Remove unnecessary tracking services.
-- [ ] Avoid child-facing advertisements.
-- [ ] Explain that clearing browser data removes progress.
+- [x] Confirm that no personal information is collected.
+- [x] Confirm that practice data remains in the browser.
+- [x] Remove unnecessary tracking services.
+- [x] Avoid child-facing advertisements.
+- [x] Explain that clearing browser data removes progress.
 
 ### 87. Complete Browser Testing
 
-- [ ] Test in Chrome.
+- [x] Test in Chrome.
 - [ ] Test in Safari.
 - [ ] Test in Firefox.
 - [ ] Test in Microsoft Edge.
-- [ ] Test on an iPad or tablet emulator.
-- [ ] Test on a mobile device or emulator.
+- [x] Test on an iPad or tablet emulator.
+- [x] Test on a mobile device or emulator.
 
 ### 88. Prepare the Production Build
 
-- [ ] Run all tests.
-- [ ] Resolve linting errors.
-- [ ] Resolve TypeScript errors.
-- [ ] Create the production build.
-- [ ] Test the production build locally.
-- [ ] Configure deployment routing for React Router.
+- [x] Run all tests.
+- [x] Resolve linting errors.
+- [x] Resolve TypeScript errors.
+- [x] Create the production build.
+- [x] Test the production build locally.
+- [x] Configure deployment routing for React Router.
 
 ### 89. Deploy the Application
 
-- [ ] Select a hosting service.
+- [x] Select a hosting service.
 - [ ] Deploy the production build.
 - [ ] Verify every route.
 - [ ] Verify local-storage persistence.
 - [ ] Verify responsive behavior.
 - [ ] Verify that no development errors appear in the console.
+
+---
+
+## Final verification notes (Phases 20–22)
+
+- Reused the 479 existing tests. Added four real-generator mixed-session cases (one per difficulty) and one 5,010-attempt retention/serialization regression. The complete suite and required checks are recorded in README.md.
+- Production Chrome smoke testing completed a keyboard-only five-question session, reduced-motion checks, direct routes and safe missing-session behavior, tablet/mobile overflow checks, and populated statistics. Existing recovery/reset/review/mastery integration tests were reused.
+- Axe found no WCAG-tagged violations on home, setup, statistics, settings, missing-session/summary states, both card faces, and populated mobile statistics. Card-front contrast was incomplete automatically; source color pairs were reviewed and calculated at 5.71:1 or better. Actual screen-reader testing remains unchecked. Browser zoom was documented in earlier phases but was not repeated in this focused final pass; leave its final check open.
+- Tested 5,000 attempts, 500 sessions, and about 876 mistake patterns. At 4× Chrome CPU throttling, statistics navigation/rendering including polling took about 1.25 seconds; filters worked and recent history remained limited to 20. Browser setItem took about 40 ms under throttling. Storage was about 1.85 MB UTF-8 / 3.69 MB UTF-16. These timings are observations, not guarantees for physical slow devices.
+- Grouping attempts by session reduced normalization from about 52–79 ms to 9–25 ms locally. Memoized mistake calculations/sorting across display-filter changes. Generation already occurs outside render; shared checkpoint updates are necessary for recovery. No broad rendering refactor was warranted.
+- Detailed sessions are already capped at 500; pruning metadata preserves all attempts and totals (verified). Attempt archiving and archive-specific aggregates remain unchecked/deferred: replay supports mastery and the tested history fits storage. Unbounded future history can hit browser quota; warnings and in-memory continuation are covered.
+- Initial JavaScript is about 377 KB / 116 KB gzip and CSS about 12 KB / 3 KB gzip. Dependencies were reviewed; no unused runtime dependencies, remote fonts, or images need removal/optimization. Lazy loading remains unchecked/deferred because no measured problem warranted it. Slower-device testing used CPU emulation only.
+- Privacy review found no personal-data input, practice-data upload, tracking, or advertisements. Local-data loss is explained in Settings and README.md. Ordinary host access logs are outside application storage.
+- Safari, Firefox, Edge, real screen-reader output, and physical devices remain unverified. Chrome device emulation does not establish coverage of those browsers/hardware.
+- Netlify is selected and configured; dist/_redirects provides the SPA fallback for manual or Git-connected deployment. The local production build was tested. Task 89 route/persistence/responsiveness/console checks remain unchecked because they refer to the hosted deployment, which was intentionally not performed. No deploy, commit, or push was made; specification.md was not modified.
+- Main specification/MVP requirements are covered. Optional sound and step-by-step explanations remain visibly unavailable; no new features were added.
 
 ---
 

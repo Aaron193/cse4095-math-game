@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import type { MistakePattern } from '../../types/mistake'
 import type { PracticeAttempt } from '../../types/session'
@@ -25,8 +25,12 @@ export default function MistakeStatistics({
   threshold: number
 }) {
   const [view, setView] = useState<'active' | 'mastered' | 'all'>('active')
-  const stats = calculateMistakeStatistics(patterns, attempts)
-  const visible = sortMistakePatterns(patterns).filter(
+  const stats = useMemo(
+    () => calculateMistakeStatistics(patterns, attempts),
+    [patterns, attempts],
+  )
+  const sorted = useMemo(() => sortMistakePatterns(patterns), [patterns])
+  const visible = sorted.filter(
     (pattern) =>
       view === 'all' ||
       (view === 'mastered' ? pattern.mastered : !pattern.mastered),
